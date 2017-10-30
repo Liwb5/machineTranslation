@@ -567,15 +567,16 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
     encoder_optimizer.zero_grad()
     decoder_optimizer.zero_grad()
 
-    input_length = input_variable.size()[0]
-    target_length = target_variable.size()[0]
+    #input_variable是一个句子，是还没有变成词向量的字符串句子
+    input_length = input_variable.size()[0]#source sentence 的长度
+    target_length = target_variable.size()[0]#目标句子的长度
     
-    encoder_outputs = Variable(torch.zeros(max_length, encoder.hidden_size))
+    encoder_outputs = Variable(torch.zeros(max_length, encoder.hidden_size))#max_length=10，也就是句子的最长长度，hidden_size是256，所以encoder_outputs是矩阵10X256
     encoder_outputs = encoder_outputs.cuda() if use_cuda else encoder_outputs
    
     loss = 0
 
-    for ei in range(input_length):
+    for ei in range(input_length):#句子有多长就迭代多少次
         encoder_output, encoder_hidden = encoder(
             input_variable[ei], encoder_hidden)
         encoder_outputs[ei] = encoder_output[0][0]
@@ -583,7 +584,7 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
     decoder_input = Variable(torch.LongTensor([[SOS_token]]))
     decoder_input = decoder_input.cuda() if use_cuda else decoder_input
     
-    decoder_hidden = encoder_hidden
+    decoder_hidden = encoder_hidden#encoder最后一层的hidden_state传给decoder作为decoder的第一个hidden_state
 
     use_teacher_forcing = True if random.random() < teacher_forcing_ratio else False
 
@@ -593,9 +594,9 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
             decoder_output, decoder_hidden, decoder_attention = decoder(
                 decoder_input, decoder_hidden, encoder_output, encoder_outputs)
             loss += criterion(decoder_output, target_variable[di])
-            decoder_input = target_variable[di]  # Teacher forcing
+            decoder_input = target_variable[di]  # Teacher forcing这个是直接给答案，也就是一个单词，进入decoder里面再变成词向量
 
-    else:
+    else:#这边是不直接给答案，而是每次output那里选择概率最大的作为下一个输入
         # Without teacher forcing: use its own predictions as the next input
         for di in range(target_length):
             decoder_output, decoder_hidden, decoder_attention = decoder(
@@ -743,14 +744,14 @@ def evaluate(encoder, decoder, sentence, max_length=MAX_LENGTH):
     decoded_words = []
     decoder_attentions = torch.zeros(max_length, max_length)
 
-    for di in range(max_length):
+    for di in range(max_length):#注意这里跟训练的时候不一样，训练的时候用的是target_length。这里因为要输出句子，而代码限定了句子的最大长度。
         decoder_output, decoder_hidden, decoder_attention = decoder(
             decoder_input, decoder_hidden, encoder_output, encoder_outputs)
         decoder_attentions[di] = decoder_attention.data
         topv, topi = decoder_output.data.topk(1)
         ni = topi[0][0]
         if ni == EOS_token:
-            decoded_words.append('<EOS>')
+            decoded_words.append('<EOS>')  #检测到结束符就停止
             break
         else:
             decoded_words.append(output_lang.index2word[ni])
