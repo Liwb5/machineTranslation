@@ -1,88 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Translation with a Sequence to Sequence Network and Attention
-*************************************************************
-**Author**: `Sean Robertson <https://github.com/spro/practical-pytorch>`_
-
-In this project we will be teaching a neural network to translate from
-French to English.
-
-::
-
-    [KEY: > input, = target, < output]
-
-    > il est en train de peindre un tableau .
-    = he is painting a picture .
-    < he is painting a picture .
-
-    > pourquoi ne pas essayer ce vin delicieux ?
-    = why not try that delicious wine ?
-    < why not try that delicious wine ?
-
-    > elle n est pas poete mais romanciere .
-    = she is not a poet but a novelist .
-    < she not not a poet but a novelist .
-
-    > vous etes trop maigre .
-    = you re too skinny .
-    < you re all alone .
-
-... to varying degrees of success.
-
-This is made possible by the simple but powerful idea of the `sequence
-to sequence network <http://arxiv.org/abs/1409.3215>`__, in which two
-recurrent neural networks work together to transform one sequence to
-another. An encoder network condenses an input sequence into a vector,
-and a decoder network unfolds that vector into a new sequence.
-
-.. figure:: /_static/img/seq-seq-images/seq2seq.png
-   :alt: 
-
-To improve upon this model we'll use an `attention
-mechanism <https://arxiv.org/abs/1409.0473>`__, which lets the decoder
-learn to focus over a specific range of the input sequence.
-
-**Recommended Reading:**
-
-I assume you have at least installed PyTorch, know Python, and
-understand Tensors:
-
--  http://pytorch.org/ For installation instructions
--  :doc:`/beginner/deep_learning_60min_blitz` to get started with PyTorch in general
--  :doc:`/beginner/pytorch_with_examples` for a wide and deep overview
--  :doc:`/beginner/former_torchies_tutorial` if you are former Lua Torch user
-
-
-It would also be useful to know about Sequence to Sequence networks and
-how they work:
-
--  `Learning Phrase Representations using RNN Encoder-Decoder for
-   Statistical Machine Translation <http://arxiv.org/abs/1406.1078>`__
--  `Sequence to Sequence Learning with Neural
-   Networks <http://arxiv.org/abs/1409.3215>`__
--  `Neural Machine Translation by Jointly Learning to Align and
-   Translate <https://arxiv.org/abs/1409.0473>`__
--  `A Neural Conversational Model <http://arxiv.org/abs/1506.05869>`__
-
-You will also find the previous tutorials on
-:doc:`/intermediate/char_rnn_classification_tutorial`
-and :doc:`/intermediate/char_rnn_generation_tutorial`
-helpful as those concepts are very similar to the Encoder and Decoder
-models, respectively.
-
-And for more, read the papers that introduced these topics:
-
--  `Learning Phrase Representations using RNN Encoder-Decoder for
-   Statistical Machine Translation <http://arxiv.org/abs/1406.1078>`__
--  `Sequence to Sequence Learning with Neural
-   Networks <http://arxiv.org/abs/1409.3215>`__
--  `Neural Machine Translation by Jointly Learning to Align and
-   Translate <https://arxiv.org/abs/1409.0473>`__
--  `A Neural Conversational Model <http://arxiv.org/abs/1506.05869>`__
-
-
-**Requirements**
-"""
 from __future__ import unicode_literals, print_function, division
 from io import open
 import unicodedata
@@ -98,60 +14,9 @@ import torch.nn.functional as F
 
 use_cuda = torch.cuda.is_available()
 
-######################################################################
-# Loading data files
-# ==================
-#
-# The data for this project is a set of many thousands of English to
-# French translation pairs.
-#
-# `This question on Open Data Stack
-# Exchange <http://opendata.stackexchange.com/questions/3888/dataset-of-sentences-translated-into-many-languages>`__
-# pointed me to the open translation site http://tatoeba.org/ which has
-# downloads available at http://tatoeba.org/eng/downloads - and better
-# yet, someone did the extra work of splitting language pairs into
-# individual text files here: http://www.manythings.org/anki/
-#
-# The English to French pairs are too big to include in the repo, so
-# download to ``data/eng-fra.txt`` before continuing. The file is a tab
-# separated list of translation pairs:
-#
-# ::
-#
-#     I am cold.    Je suis froid.
-#
-# .. Note::
-#    Download the data from
-#    `here <https://download.pytorch.org/tutorial/data.zip>`_
-#    and extract it to the current directory.
-
-######################################################################
-# Similar to the character encoding used in the character-level RNN
-# tutorials, we will be representing each word in a language as a one-hot
-# vector, or giant vector of zeros except for a single one (at the index
-# of the word). Compared to the dozens of characters that might exist in a
-# language, there are many many more words, so the encoding vector is much
-# larger. We will however cheat a bit and trim the data to only use a few
-# thousand words per language.
-#
-# .. figure:: /_static/img/seq-seq-images/word-encoding.png
-#    :alt:
-#
-#
-
-
-######################################################################
-# We'll need a unique index per word to use as the inputs and targets of
-# the networks later. To keep track of all this we will use a helper class
-# called ``Lang`` which has word → index (``word2index``) and index → word
-# (``index2word``) dictionaries, as well as a count of each word
-# ``word2count`` to use to later replace rare words.
-#
 
 SOS_token = 0
 EOS_token = 1
-
-#这个类通过不断输入sentence，构建词与下标的对应（词典），方便制作one-hot。
 class Lang:
     def __init__(self, name):
         self.name = name
@@ -160,6 +25,7 @@ class Lang:
         self.index2word = {0: "SOS", 1: "EOS"}
         self.n_words = 2  # Count SOS and EOS
 
+    #通过不断输入sentence（字符串的格式），构建词与下标的对应（词典），方便制作one-hot。
     def addSentence(self, sentence):
         for word in sentence.split(' '):
             self.addWord(word)
@@ -174,14 +40,6 @@ class Lang:
             self.word2count[word] += 1
 
 
-######################################################################
-# The files are all in Unicode, to simplify we will turn Unicode
-# characters to ASCII, make everything lowercase, and trim most
-# punctuation.
-#
-
-# Turn a Unicode string to plain ASCII, thanks to
-# http://stackoverflow.com/a/518232/2809427
 def unicodeToAscii(s):
     return ''.join(
         c for c in unicodedata.normalize('NFD', s)
@@ -225,15 +83,8 @@ def readLangs(lang1, lang2, reverse=False):
     return input_lang, output_lang, pairs
 
 
-######################################################################
-# Since there are a *lot* of example sentences and we want to train
-# something quickly, we'll trim the data set to only relatively short and
-# simple sentences. Here the maximum length is 10 words (that includes
-# ending punctuation) and we're filtering to sentences that translate to
-# the form "I am" or "He is" etc. (accounting for apostrophes replaced
-# earlier).
-#
-
+##下面的操作(两个函数)是为了讲数据集减少一部分，不然数据量很大。
+#这里涉及的操作是限制句子长度最大为10个词，开头由下面的元组决定
 MAX_LENGTH = 10
 
 eng_prefixes = (
@@ -244,8 +95,6 @@ eng_prefixes = (
     "we are", "we re ",
     "they are", "they re "
 )
-
-
 def filterPair(p):
     return len(p[0].split(' ')) < MAX_LENGTH and \
         len(p[1].split(' ')) < MAX_LENGTH and \
@@ -256,14 +105,10 @@ def filterPairs(pairs):
     return [pair for pair in pairs if filterPair(pair)]
 
 
-######################################################################
-# The full process for preparing the data is:
-#
-# -  Read text file and split into lines, split lines into pairs
-# -  Normalize text, filter by length and content
-# -  Make word lists from sentences in pairs
-#
 
+#这部分就是对数据进行处理的函数了，上面写的函数都会在这里被调用
+#最后得到三个变量input_lang，output_lang分别是源语言和目标语言的类，包含它们各自的词典。
+#pairs是一个列表，列表的元素是一个二元tuple，tuple里面的内容是一句源语言字符串，一句目标语言字符串。
 def prepareData(lang1, lang2, reverse=False):
     input_lang, output_lang, pairs = readLangs(lang1, lang2, reverse)
     print("Read %s sentence pairs" % len(pairs))
@@ -282,58 +127,13 @@ def prepareData(lang1, lang2, reverse=False):
 input_lang, output_lang, pairs = prepareData('eng', 'fra', True)
 print(random.choice(pairs))
 
-
-######################################################################
-# The Seq2Seq Model
-# =================
-#
-# A Recurrent Neural Network, or RNN, is a network that operates on a
-# sequence and uses its own output as input for subsequent steps.
-#
-# A `Sequence to Sequence network <http://arxiv.org/abs/1409.3215>`__, or
-# seq2seq network, or `Encoder Decoder
-# network <https://arxiv.org/pdf/1406.1078v3.pdf>`__, is a model
-# consisting of two RNNs called the encoder and decoder. The encoder reads
-# an input sequence and outputs a single vector, and the decoder reads
-# that vector to produce an output sequence.
-#
-# .. figure:: /_static/img/seq-seq-images/seq2seq.png
-#    :alt:
-#
-# Unlike sequence prediction with a single RNN, where every input
-# corresponds to an output, the seq2seq model frees us from sequence
-# length and order, which makes it ideal for translation between two
-# languages.
-#
-# Consider the sentence "Je ne suis pas le chat noir" → "I am not the
-# black cat". Most of the words in the input sentence have a direct
-# translation in the output sentence, but are in slightly different
-# orders, e.g. "chat noir" and "black cat". Because of the "ne/pas"
-# construction there is also one more word in the input sentence. It would
-# be difficult to produce a correct translation directly from the sequence
-# of input words.
-#
-# With a seq2seq model the encoder creates a single vector which, in the
-# ideal case, encodes the "meaning" of the input sequence into a single
-# vector — a single point in some N dimensional space of sentences.
-#
+############结束第一部分的数据处理的操作########################
 
 
-######################################################################
-# The Encoder
-# -----------
-#
-# The encoder of a seq2seq network is a RNN that outputs some value for
-# every word from the input sentence. For every input word the encoder
-# outputs a vector and a hidden state, and uses the hidden state for the
-# next input word.
-#
-# .. figure:: /_static/img/seq-seq-images/encoder-network.png
-#    :alt:
-#
-#
+###########model 的建立################################
 
 class EncoderRNN(nn.Module):
+    #input_size是指词典的大小(毕竟要建立embedding)，hidden_size是hidden_state的维度
     def __init__(self, input_size, hidden_size, n_layers=1):
         super(EncoderRNN, self).__init__()
         self.n_layers = n_layers
@@ -342,6 +142,8 @@ class EncoderRNN(nn.Module):
         self.embedding = nn.Embedding(input_size, hidden_size)
         self.gru = nn.GRU(hidden_size, hidden_size)
 
+    #input是一个句子(这个句子已经通过数据处理的类转换成下标，这样可以对应一个embedded)
+    #hidden 是上一个迭代中的hidden，即pre_hidden
     def forward(self, input, hidden):
         embedded = self.embedding(input).view(1, 1, -1)
         output = embedded
@@ -358,34 +160,8 @@ class EncoderRNN(nn.Module):
         else:
             return result
 
-######################################################################
-# The Decoder
-# -----------
-#
-# The decoder is another RNN that takes the encoder output vector(s) and
-# outputs a sequence of words to create the translation.
-#
-
-
-######################################################################
-# Simple Decoder
-# ^^^^^^^^^^^^^^
-#
-# In the simplest seq2seq decoder we use only last output of the encoder.
-# This last output is sometimes called the *context vector* as it encodes
-# context from the entire sequence. This context vector is used as the
-# initial hidden state of the decoder.
-#
-# At every step of decoding, the decoder is given an input token and
-# hidden state. The initial input token is the start-of-string ``<SOS>``
-# token, and the first hidden state is the context vector (the encoder's
-# last hidden state).
-#
-# .. figure:: /_static/img/seq-seq-images/decoder-network.png
-#    :alt:
-#
-#
-
+#hidden_size都是说hidden_state的维度，要和encoder一致。
+#output_size是目标语言的词典大小，因为输出的是所有词的概率
 class DecoderRNN(nn.Module):
     def __init__(self, hidden_size, output_size, n_layers=1):
         super(DecoderRNN, self).__init__()
@@ -412,44 +188,9 @@ class DecoderRNN(nn.Module):
         else:
             return result
 
-######################################################################
-# I encourage you to train and observe the results of this model, but to
-# save space we'll be going straight for the gold and introducing the
-# Attention Mechanism.
-#
-
-
-######################################################################
-# Attention Decoder
-# ^^^^^^^^^^^^^^^^^
-#
-# If only the context vector is passed betweeen the encoder and decoder,
-# that single vector carries the burden of encoding the entire sentence.
-#
-# Attention allows the decoder network to "focus" on a different part of
-# the encoder's outputs for every step of the decoder's own outputs. First
-# we calculate a set of *attention weights*. These will be multiplied by
-# the encoder output vectors to create a weighted combination. The result
-# (called ``attn_applied`` in the code) should contain information about
-# that specific part of the input sequence, and thus help the decoder
-# choose the right output words.
-#
-# .. figure:: https://i.imgur.com/1152PYf.png
-#    :alt:
-#
-# Calculating the attention weights is done with another feed-forward
-# layer ``attn``, using the decoder's input and hidden state as inputs.
-# Because there are sentences of all sizes in the training data, to
-# actually create and train this layer we have to choose a maximum
-# sentence length (input length, for encoder outputs) that it can apply
-# to. Sentences of the maximum length will use all the attention weights,
-# while shorter sentences will only use the first few.
-#
-# .. figure:: /_static/img/seq-seq-images/attention-decoder-network.png
-#    :alt:
-#
-#
-
+#hidden_size都是说hidden_state的维度，要和encoder一致。
+#output_size是目标语言的词典大小，因为输出的是所有词的概率
+#max_length是句子的最大长度(之前被限制了，以后看看能否不要这个限制)
 class AttnDecoderRNN(nn.Module):
     def __init__(self, hidden_size, output_size, n_layers=1, dropout_p=0.1, max_length=MAX_LENGTH):
         super(AttnDecoderRNN, self).__init__()
@@ -466,6 +207,11 @@ class AttnDecoderRNN(nn.Module):
         self.gru = nn.GRU(self.hidden_size, self.hidden_size)
         self.out = nn.Linear(self.hidden_size, self.output_size)
 
+    #input是一个目标句子中的某个词(这个词已经通过数据处理的类转换成下标，这样可以对应一个embedded)。
+    #当然，在进行预测的时候就不会是输入目标句子的词了。而是它预测出来的词
+    #hidden 是上一个迭代中的hidden，即pre_hidden
+    #encoder_output是encoder最后一个输出，不过在这里它并没有被使用到
+    #encoder_outputs是encoder每次输出(y1,y2,...,yn)的组成tensor，格式跟input一样，只不过它是句子，而不是某个词。
     def forward(self, input, hidden, encoder_output, encoder_outputs):
         embedded = self.embedding(input).view(1, 1, -1)
         embedded = self.dropout(embedded)
@@ -482,7 +228,7 @@ class AttnDecoderRNN(nn.Module):
             output = F.relu(output)
             output, hidden = self.gru(output, hidden)
 
-        output = F.log_softmax(self.out(output[0]))
+        output = F.log_softmax(self.out(output[0]))#每个词的概率
         return output, hidden, attn_weights
 
     def initHidden(self):
@@ -492,29 +238,14 @@ class AttnDecoderRNN(nn.Module):
         else:
             return result
 
+##########################models的建立结束了############################################
 
-######################################################################
-# .. note:: There are other forms of attention that work around the length
-#   limitation by using a relative position approach. Read about "local
-#   attention" in `Effective Approaches to Attention-based Neural Machine
-#   Translation <https://arxiv.org/abs/1508.04025>`__.
-#
-# Training
-# ========
-#
-# Preparing Training Data
-# -----------------------
-#
-# To train, for each pair we will need an input tensor (indexes of the
-# words in the input sentence) and target tensor (indexes of the words in
-# the target sentence). While creating these vectors we will append the
-# EOS token to both sequences.
-#
-
+#########################training#####################################
+#返回词对应的下标
 def indexesFromSentence(lang, sentence):
     return [lang.word2index[word] for word in sentence.split(' ')]
 
-
+#将词转换成variable
 def variableFromSentence(lang, sentence):
     indexes = indexesFromSentence(lang, sentence)
     indexes.append(EOS_token)
@@ -524,42 +255,14 @@ def variableFromSentence(lang, sentence):
     else:
         return result
 
-
 def variablesFromPair(pair):
     input_variable = variableFromSentence(input_lang, pair[0])
     target_variable = variableFromSentence(output_lang, pair[1])
     return (input_variable, target_variable)
 
 
-######################################################################
-# Training the Model
-# ------------------
-#
-# To train we run the input sentence through the encoder, and keep track
-# of every output and the latest hidden state. Then the decoder is given
-# the ``<SOS>`` token as its first input, and the last hidden state of the
-# encoder as its first hidden state.
-#
-# "Teacher forcing" is the concept of using the real target outputs as
-# each next input, instead of using the decoder's guess as the next input.
-# Using teacher forcing causes it to converge faster but `when the trained
-# network is exploited, it may exhibit
-# instability <http://minds.jacobs-university.de/sites/default/files/uploads/papers/ESNTutorialRev.pdf>`__.
-#
-# You can observe outputs of teacher-forced networks that read with
-# coherent grammar but wander far from the correct translation -
-# intuitively it has learned to represent the output grammar and can "pick
-# up" the meaning once the teacher tells it the first few words, but it
-# has not properly learned how to create the sentence from the translation
-# in the first place.
-#
-# Because of the freedom PyTorch's autograd gives us, we can randomly
-# choose to use teacher forcing or not with a simple if statement. Turn
-# ``teacher_forcing_ratio`` up to use more of it.
-#
 
 teacher_forcing_ratio = 0.5
-
 
 def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, max_length=MAX_LENGTH):
     encoder_hidden = encoder.initHidden()
@@ -570,10 +273,10 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
     #input_variable已经在函数外变成了tensor了，tensor的元素是词的下标
     input_length = input_variable.size()[0]#source sentence 的长度
     target_length = target_variable.size()[0]#目标句子的长度
-    
+
     encoder_outputs = Variable(torch.zeros(max_length, encoder.hidden_size))#max_length=10，也就是句子的最长长度，hidden_size是256，所以encoder_outputs是矩阵10X256
     encoder_outputs = encoder_outputs.cuda() if use_cuda else encoder_outputs
-   
+
     loss = 0
 
     for ei in range(input_length):#句子有多长就迭代多少次
@@ -583,7 +286,7 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
 
     decoder_input = Variable(torch.LongTensor([[SOS_token]]))
     decoder_input = decoder_input.cuda() if use_cuda else decoder_input
-    
+
     decoder_hidden = encoder_hidden#encoder最后一层的hidden_state传给decoder作为decoder的第一个hidden_state
 
     use_teacher_forcing = True if random.random() < teacher_forcing_ratio else False
@@ -602,12 +305,14 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
         for di in range(target_length):
             decoder_output, decoder_hidden, decoder_attention = decoder(
                 decoder_input, decoder_hidden, encoder_output, encoder_outputs)
+            #从decoder的类中可以知道，decoder_output是softmax出来的，即所有词的概率。
+            #topk函数是查找最大的K 个数，这里参数是1，topv就是value，topi是index，也就是词对应的下标
             topv, topi = decoder_output.data.topk(1)
             ni = topi[0][0]
-            
+
             decoder_input = Variable(torch.LongTensor([[ni]]))
             decoder_input = decoder_input.cuda() if use_cuda else decoder_input
-            
+
             loss += criterion(decoder_output, target_variable[di])
             if ni == EOS_token:
                 break
@@ -667,14 +372,14 @@ def trainIters(encoder, decoder, n_iters, print_every=1000, plot_every=100, lear
     #这里的training_pairs经过variableFromPair处理后，每个元素已经是一个tensor了，并且是单词所在的下标，为了可以和embedd匹配。
     training_pairs = [variablesFromPair(random.choice(pairs))
                       for i in range(n_iters)]
-    print(random.choice(training_pairs)[0].data)
+    #print(random.choice(training_pairs)[0].data)
     criterion = nn.NLLLoss()
 
     for iter in range(1, n_iters + 1):
         training_pair = training_pairs[iter - 1]
         input_variable = training_pair[0]
         target_variable = training_pair[1]
- 
+
         loss = train(input_variable, target_variable, encoder,
                      decoder, encoder_optimizer, decoder_optimizer, criterion)
         print_loss_total += loss
@@ -759,7 +464,7 @@ def evaluate(encoder, decoder, sentence, max_length=MAX_LENGTH):
             break
         else:
             decoded_words.append(output_lang.index2word[ni])
-        
+
         decoder_input = Variable(torch.LongTensor([[ni]]))
         decoder_input = decoder_input.cuda() if use_cuda else decoder_input
 
@@ -795,7 +500,7 @@ def evaluateRandomly(encoder, decoder, n=10):
 # single GRU layer. After about 40 minutes on a MacBook CPU we'll get some
 # reasonable results.
 #
-# .. Note:: 
+# .. Note::
 #    If you run this notebook you can train, interrupt the kernel,
 #    evaluate, and continue training later. Comment out the lines where the
 #    encoder and decoder are initialized and run ``trainIters`` again.
@@ -810,7 +515,7 @@ if use_cuda:
     encoder1 = encoder1.cuda()
     attn_decoder1 = attn_decoder1.cuda()
 
-trainIters(encoder1, attn_decoder1, 1, print_every=1000)
+trainIters(encoder1, attn_decoder1, 75000, print_every=1000)
 
 ######################################################################
 #
