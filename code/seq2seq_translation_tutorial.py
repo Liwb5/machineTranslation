@@ -12,10 +12,10 @@ from torch.autograd import Variable
 from torch import optim
 import torch.nn.functional as F
 
-import hyperboard import Agent
+from hyperboard import Agent
 
-#agent = Agent(address='172.18.233.3',port=5000)
-agent = Agent(address='172.18.216.69',port=5000)
+agent = Agent(address='172.18.233.3',username = 'liwb',password='a1s2d3f4',port=1234)
+#agent = Agent(address='172.18.216.69',port=5000)
 hyperparameters = {'test':0.1}
 name = agent.register(hyperparameters, 'loss')
 
@@ -523,7 +523,7 @@ if use_cuda:
     encoder1 = encoder1.cuda()
     attn_decoder1 = attn_decoder1.cuda()
 
-trainIters(encoder1, attn_decoder1, 75000, print_every=1000)
+trainIters(encoder1, attn_decoder1, 15000, print_every=1000)
 
 ######################################################################
 #
