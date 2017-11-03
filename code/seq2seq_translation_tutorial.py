@@ -567,7 +567,7 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
     encoder_optimizer.zero_grad()
     decoder_optimizer.zero_grad()
 
-    #input_variable是一个句子，是还没有变成词向量的字符串句子
+    #input_variable已经在函数外变成了tensor了，tensor的元素是词的下标
     input_length = input_variable.size()[0]#source sentence 的长度
     target_length = target_variable.size()[0]#目标句子的长度
     
@@ -664,8 +664,10 @@ def trainIters(encoder, decoder, n_iters, print_every=1000, plot_every=100, lear
 	#考虑改成其他的优化器
     encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
+    #这里的training_pairs经过variableFromPair处理后，每个元素已经是一个tensor了，并且是单词所在的下标，为了可以和embedd匹配。
     training_pairs = [variablesFromPair(random.choice(pairs))
                       for i in range(n_iters)]
+    print(random.choice(training_pairs)[0].data)
     criterion = nn.NLLLoss()
 
     for iter in range(1, n_iters + 1):
@@ -808,7 +810,7 @@ if use_cuda:
     encoder1 = encoder1.cuda()
     attn_decoder1 = attn_decoder1.cuda()
 
-trainIters(encoder1, attn_decoder1, 75000, print_every=1000)
+trainIters(encoder1, attn_decoder1, 1, print_every=1000)
 
 ######################################################################
 #
