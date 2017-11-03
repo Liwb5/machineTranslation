@@ -14,7 +14,7 @@ import torch.nn.functional as F
 
 from hyperboard import Agent
 
-agent = Agent(address='172.18.233.3',username = 'liwb',password='a1s2d3f4',port=1234)
+agent = Agent(address='127.0.0.1',port=5100)
 #agent = Agent(address='172.18.216.69',port=5000)
 hyperparameters = {'test':0.1}
 name = agent.register(hyperparameters, 'loss')
