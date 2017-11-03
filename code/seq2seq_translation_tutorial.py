@@ -151,7 +151,7 @@ use_cuda = torch.cuda.is_available()
 SOS_token = 0
 EOS_token = 1
 
-
+#这个类通过不断输入sentence，构建词与下标的对应（词典），方便制作one-hot。
 class Lang:
     def __init__(self, name):
         self.name = name
@@ -189,8 +189,6 @@ def unicodeToAscii(s):
     )
 
 # Lowercase, trim, and remove non-letter characters
-
-
 def normalizeString(s):
     s = unicodeToAscii(s.lower().strip())
     s = re.sub(r"([.!?])", r" \1", s)
@@ -271,7 +269,7 @@ def prepareData(lang1, lang2, reverse=False):
     print("Read %s sentence pairs" % len(pairs))
     pairs = filterPairs(pairs)
     print("Trimmed to %s sentence pairs" % len(pairs))
-    print("Counting words...")
+    print("Counting words..."
     for pair in pairs:
         input_lang.addSentence(pair[0])
         output_lang.addSentence(pair[1])
@@ -347,6 +345,8 @@ class EncoderRNN(nn.Module):
     def forward(self, input, hidden):
         embedded = self.embedding(input).view(1, 1, -1)
         output = embedded
+        #这个n_layers==1其实就是只相当于一个cell，对一个input(单词)和上一个hidden state
+        #这里做了一个gru操作。n_layers大于1则是对同一个东西迭代多次，也许效果会好。
         for i in range(self.n_layers):
             output, hidden = self.gru(output, hidden)
         return output, hidden
@@ -579,7 +579,7 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
     for ei in range(input_length):#句子有多长就迭代多少次
         encoder_output, encoder_hidden = encoder(
             input_variable[ei], encoder_hidden)
-        encoder_outputs[ei] = encoder_output[0][0]
+        encoder_outputs[ei] = encoder_output[0][0]#将每个词encoder的output记录下来
 
     decoder_input = Variable(torch.LongTensor([[SOS_token]]))
     decoder_input = decoder_input.cuda() if use_cuda else decoder_input
@@ -591,9 +591,10 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
     if use_teacher_forcing:
         # Teacher forcing: Feed the target as the next input
         for di in range(target_length):
+        	#encoder_outputs作为decoder的输入，是为了改变attention。
             decoder_output, decoder_hidden, decoder_attention = decoder(
                 decoder_input, decoder_hidden, encoder_output, encoder_outputs)
-            loss += criterion(decoder_output, target_variable[di])
+            loss += criterion(decoder_output, target_variable[di])#这两个变量是什么形式
             decoder_input = target_variable[di]  # Teacher forcing这个是直接给答案，也就是一个单词，进入decoder里面再变成词向量
 
     else:#这边是不直接给答案，而是每次output那里选择概率最大的作为下一个输入
@@ -611,7 +612,7 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
             if ni == EOS_token:
                 break
 
-    loss.backward()
+    loss.backward()#如何理解这一步反向梯度对encoder和decoder都有效
 
     encoder_optimizer.step()
     decoder_optimizer.step()
@@ -660,6 +661,7 @@ def trainIters(encoder, decoder, n_iters, print_every=1000, plot_every=100, lear
     print_loss_total = 0  # Reset every print_every
     plot_loss_total = 0  # Reset every plot_every
 
+	#考虑改成其他的优化器
     encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
     training_pairs = [variablesFromPair(random.choice(pairs))
@@ -806,7 +808,7 @@ if use_cuda:
     encoder1 = encoder1.cuda()
     attn_decoder1 = attn_decoder1.cuda()
 
-trainIters(encoder1, attn_decoder1, 75000, print_every=5000)
+trainIters(encoder1, attn_decoder1, 75000, print_every=1000)
 
 ######################################################################
 #
