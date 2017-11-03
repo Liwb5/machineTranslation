@@ -12,6 +12,13 @@ from torch.autograd import Variable
 from torch import optim
 import torch.nn.functional as F
 
+import hyperboard import Agent
+
+#agent = Agent(address='172.18.233.3',port=5000)
+agent = Agent(address='172.18.216.69',port=5000)
+hyperparameters = {'test':0.1}
+name = agent.register(hyperparameters, 'loss')
+
 use_cuda = torch.cuda.is_available()
 
 
@@ -393,10 +400,11 @@ def trainIters(encoder, decoder, n_iters, print_every=1000, plot_every=100, lear
 
         if iter % plot_every == 0:
             plot_loss_avg = plot_loss_total / plot_every
+            agent.append(name, iter, plot_loss_avg)
             plot_losses.append(plot_loss_avg)
             plot_loss_total = 0
 
-    showPlot(plot_losses)
+    #showPlot(plot_losses)
 
 
 ######################################################################
@@ -574,13 +582,13 @@ def evaluateAndShowAttention(input_sentence):
     showAttention(input_sentence, output_words, attentions)
 
 
-evaluateAndShowAttention("elle a cinq ans de moins que moi .")
-
-evaluateAndShowAttention("elle est trop petit .")
-
-evaluateAndShowAttention("je ne crains pas de mourir .")
-
-evaluateAndShowAttention("c est un jeune directeur plein de talent .")
+# evaluateAndShowAttention("elle a cinq ans de moins que moi .")
+#
+# evaluateAndShowAttention("elle est trop petit .")
+#
+# evaluateAndShowAttention("je ne crains pas de mourir .")
+#
+# evaluateAndShowAttention("c est un jeune directeur plein de talent .")
 
 
 ######################################################################
