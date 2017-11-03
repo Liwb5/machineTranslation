@@ -567,7 +567,7 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
     encoder_optimizer.zero_grad()
     decoder_optimizer.zero_grad()
 
-    #input_variable是一个句子，是还没有变成词向量的字符串句子
+    #input_variable已经在函数外变成了tensor了，tensor的元素是词的下标
     input_length = input_variable.size()[0]#source sentence 的长度
     target_length = target_variable.size()[0]#目标句子的长度
     
