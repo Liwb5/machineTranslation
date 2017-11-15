@@ -4,10 +4,12 @@ import unicodedata
 import string
 import re
 import random
+import numpy as np
+import pandas as pd
 
 import pickle
 import jieba
-
+import h5py
 
 SOS_token = 0
 EOS_token = 1
@@ -43,6 +45,7 @@ class Lang:
         if self.name != name:
             print('error: Name error------------------------------!')
             
+            
 ##################################################################
 
 def unicodeToAscii(s):
@@ -56,13 +59,23 @@ def normalizeString(s):
     s = re.sub(r"[^a-zA-Z.!?]+", r" ", s)
     return s
 
+def normalizeChinese(s):
+    try:
+        s.encode("gb2312")
+    except UnicodeEncodeError:
+        return ' '
+    s = re.sub(r"[~!@#$%^&* ]+",r' ', s)
+    return s
+
+
 #lang1 = 'zh'  lang2 = 'en'
 #默认英文到中文
 def readTrainLangs(lang1, lang2, reverse=True,fenci = False):
     print("Reading lines...")
 
-    zh_lines = open('../data/train.%s'% lang1, encoding='utf-8').read().strip().split('\n')
-    zh_lines = zh_lines[0:20]  #for test
+    zh_lines = open('../data/train.%s'% lang1).read().strip().split('\n')
+    #zh_lines = zh_lines[0:20]  #for test
+
     zh_data_list = []
     if fenci:
         #jieba 分词
@@ -70,30 +83,41 @@ def readTrainLangs(lang1, lang2, reverse=True,fenci = False):
             seg_line = jieba.cut(line,cut_all=False)
             #dic = [seg for seg in seg_line]
             dic = ' '.join(seg_line)
-            zh_data_list.append(dic)
+            tmp = ' '
+            for char in dic.split(' '):
+                val = normalizeChinese(char)
+                tmp += val+' '
+            zh_data_list.append(tmp)
     else: #用空格按字分开
         for line in zh_lines:
             dic = ' '.join(line)
-            zh_data_list.append(dic)
+            tmp = ' '
+            for char in dic.split(' '):
+                val = normalizeChinese(char)##去除生僻词
+                tmp += val+' '
+            zh_data_list.append(tmp)
 
-    en_lines = open('../data/train.%s'% lang2, encoding='utf-8').read().strip().split('\n')
-    en_lines = en_lines[0:20]  #for test
+    en_lines = open('../data/train.%s'% lang2).read().strip().split('\n')
+    #en_lines = en_lines[0:20]  #for test
     
     # Split every line into pairs and normalize
     #去掉一些标点符号
     en_data_list = [[normalizeString(s) for s in l.split('\t')] for l in en_lines]
-
     pairs = []
     if reverse:
         input_lang = Lang(lang2)
         output_lang = Lang(lang1)
         for en,zh in zip(en_data_list,zh_data_list):
-            pairs.append([en[0],zh])
+            input_lang.addSentence(en[0])
+            output_lang.addSentence(zh)
+            pairs.append([en[0].encode('utf-8'),zh.encode('gb2312')])
     else:
         input_lang = Lang(lang1)
         output_lang = Lang(lang2)
         for en,zh in zip(en_data_list,zh_data_list):
-            pairs.append([zh, en[0]])
+            input_lang.addSentence(zh)
+            output_lang.addSentence(en[0])
+            pairs.append([zh.encode('gb2312'), en[0].encode('utf-8')])
             
     return input_lang, output_lang, pairs
 ##################################################
@@ -104,17 +128,27 @@ def readTrainLangs(lang1, lang2, reverse=True,fenci = False):
 def prepareData(lang1, lang2, reverse=True, fenci=False):
     input_lang, output_lang, pairs = readTrainLangs(lang1, lang2, reverse, fenci)
     print("Read %s sentence pairs" % len(pairs))
-    print(pairs[0])
+    print(pairs[0][0].decode('utf-8'),pairs[0][1].decode('gb2312'))
     #pairs = filterPairs(pairs)
     #print("Trimmed to %s sentence pairs" % len(pairs))
     print("Counting words...")
-    for pair in pairs:
-        input_lang.addSentence(pair[0])
-        output_lang.addSentence(pair[1])
+#     for pair in pairs:
+#         input_lang.addSentence(pair[0].decode('utf-8'))
+#         output_lang.addSentence(pair[1].decode('gb2312'))
     print("Counted words:")
     print(input_lang.name, input_lang.n_words)
     print(output_lang.name, output_lang.n_words)
     return input_lang, output_lang, pairs
 
 
-inputLang, outputLang, pairs = prepareData('zh','en')
+if __name__=='__main__':
+    inputLang, outputLang, pairs = prepareData('zh','en')
+
+    inputLang.save('../data/en_train1.pkl')
+    outputLang.save('../data/zh_train1.pkl')
+
+    h5 = h5py.File('../data/train_afterProcess1.h5py','w')
+    h5.create_dataset('pairs',data=pairs,dtype = 'S400')
+    h5.close()
+    
+    
