@@ -67,8 +67,8 @@ if __name__=='__main__':
         encoder1 = encoder1.cuda()
         attn_decoder1 = attn_decoder1.cuda()
 
-    m.trainIters(encoder1, attn_decoder1, inputlang, outputlang,pairs, n_iters = 8000000, \
-                 plot_every = 100, print_every=1000, save_model_every=50000)
+    m.trainIters(encoder1, attn_decoder1, inputlang, outputlang,pairs, n_iters = 800000, \
+                 plot_every = 1000, print_every=1000, save_model_every=50000)
     
     
     m.evaluateRandomly(encoder1,attn_decoder1,inputlang,outputlang,pairs,n = 100)

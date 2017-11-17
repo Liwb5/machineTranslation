@@ -12,19 +12,32 @@ from torch.autograd import Variable
 from torch import optim
 import torch.nn.functional as F
 
+import nltk
+
+#--------some hyperparameters-------------------#
+use_cuda = torch.cuda.is_available()
 
 SOS_token = 0
 EOS_token = 1
-use_cuda = torch.cuda.is_available()
-MAX_LENGTH = 30
+
 teacher_forcing_ratio = 0.9  #在训练时解码器使用labels（平行预料）进行训练的概率
+MAX_LENGTH = 30
 LEARNING_RATE = 0.01
+HIDDEN_STATE = 256
+n_layers = 1   #对一个句子循环RNN训练的次数
+dropout_p = 0.1  
 modeName = 'first'
+
 
 from hyperboard import Agent
 agent = Agent(address='127.0.0.1',port=5100)
 #agent = Agent(address='172.18.216.69',port=5000)
-hyperparameters = {'learning rate':LEARNING_RATE}
+hyperparameters = {'learning rate':LEARNING_RATE,
+                   'max_length':MAX_LENGTH,
+                  'teacher_forcing_ratio':teacher_forcing_ratio,
+                  'hidden_state':HIDDEN_STATE,
+                   'n_layers':n_layers
+                  }
 name = agent.register(hyperparameters, 'loss',overwrite=True)
 
 
@@ -283,7 +296,11 @@ def trainIters(encoder, decoder, inputlang, outputlang, pairs, n_iters, print_ev
         training_pair = variablesFromPair(random.choice(pairs),inputlang,outputlang)
         input_variable = training_pair[0]
         target_variable = training_pair[1]
-
+        #如果句子太长，丢弃它
+        if len(input_variable) > MAX_LENGTH or len(target_variable) > MAX_LENGTH:
+            continue
+            
+        #print(training_pair[0])
         loss = train(input_variable, target_variable, encoder,
                      decoder, encoder_optimizer, decoder_optimizer, criterion)
         print_loss_total += loss
@@ -376,9 +393,31 @@ def evaluateRandomly(encoder, decoder, inputlang, outputlang,pairs, n=100):
         output_sentence = ' '.join(output_words)
         print('<', output_sentence)
         print('')
+       
+        
+def calculateValidData_BLEU_Score(encoder, decoder, inputlang, outputlang, pairs):
+    predict_words = []
+    bleu_score = 0.0
+    for pair in pairs:
+        output_words, attentions = evaluate(encoder, decoder, pair[0].decode('utf-8'),inputlang, outputlang)
+        #output_sentence = ' '.join(output_words)
+        label_words = nltk.word_tokenize(pair[1].decode('gb2312'))
+        bleu_score += nltk.translate.bleu_score.sentence_bleu([label_words],output_words)
+    bleu_score = bleu_score/len(pairs)
+    print('bleu_score is:',bleu_score)
+    return bleu_score
+        
+######for test data__________________
+def evaluateForTestData(encoder, decoder, inputlang, pairs, n=100):
+    for i in range(n):
+        pair = random.choice(pairs)
+        print('>', pair[0].decode('utf-8'))
+        output_words, attentions = evaluate(encoder, decoder, pair[0].decode('utf-8'),inputlang, outputlang)
+        output_sentence = ' '.join(output_words)
+        print('<', output_sentence)
+        print('')
         
         
-
         
         
 if __name__=='__main__':
