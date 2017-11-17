@@ -21,7 +21,10 @@ EOS_token = 1
 
 
 
-
+def filterPair(p):
+    return len(p[0].split(' ')) < MAX_LENGTH and \
+        len(p[1].split(' ')) < MAX_LENGTH and \
+        p[1].startswith(eng_prefixes)
 
 
 
@@ -60,6 +63,8 @@ if __name__=='__main__':
     print(len(inputlang.word2count))
     print(len(inputlang.word2index))
     print(len(inputlang.index2word))
+    
+    #filter some Pair for test
     
     
     
