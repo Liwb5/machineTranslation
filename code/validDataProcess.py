@@ -15,6 +15,7 @@ SOS_token = 0
 EOS_token = 1
 
 
+
 class Lang:
     def __init__(self, name):
         self.name = name
@@ -58,6 +59,19 @@ class Lang:
             
 ##################################################################
 
+def readFromFile(path):
+    file = open(path)
+    pattern = re.compile('<seg id=".*?"> (.*?) </seg>')
+    result=[]
+    for line in file.readlines():
+        #print(line)
+        item = re.findall(pattern,line)
+        if item:
+            #print(item[0])
+            result.append(item[0])
+    print('the number of all sentences is ', len(result))
+    return result
+
 def unicodeToAscii(s):
     return ''.join(
         c for c in unicodedata.normalize('NFD', s)
@@ -80,12 +94,11 @@ def normalizeChinese(s):
 
 #lang1 = 'zh'  lang2 = 'en'
 #默认英文到中文
-def readTrainLangs(lang1, lang2, reverse=True,fenci = False):
+def readValidLangs(lang1, lang2, reverse=True, fenci=False):
     print("Reading lines...")
-
-    zh_lines = open('../data/train.%s'% lang1).read().strip().split('\n')
+    zh_lines = readFromFile('../data/valid.en-zh.%s.sgm'% lang1)
     #zh_lines = zh_lines[0:20]  #for test
-
+    
     zh_data_list = []
     if fenci:
         #jieba 分词
@@ -106,8 +119,8 @@ def readTrainLangs(lang1, lang2, reverse=True,fenci = False):
                 val = normalizeChinese(char)##去除生僻词
                 tmp += val+' '
             zh_data_list.append(tmp)
-
-    en_lines = open('../data/train.%s'% lang2).read().strip().split('\n')
+            
+    en_lines = readFromFile('../data/valid.en-zh.%s.sgm'% lang2)
     #en_lines = en_lines[0:20]  #for test
     
     # Split every line into pairs and normalize
@@ -130,35 +143,41 @@ def readTrainLangs(lang1, lang2, reverse=True,fenci = False):
             pairs.append([zh.encode('gb2312'), en[0].encode('utf-8')])
             
     return input_lang, output_lang, pairs
-##################################################
-
-#这部分就是对数据进行处理的函数了，上面写的函数都会在这里被调用
-#最后得到三个变量input_lang，output_lang分别是源语言和目标语言的类，包含它们各自的词典。
-#pairs是一个列表，列表的元素是一个二元tuple，tuple里面的内容是一句源语言字符串，一句目标语言字符串。
-def prepareData(lang1, lang2, reverse=True, fenci=False):
-    input_lang, output_lang, pairs = readTrainLangs(lang1, lang2, reverse, fenci)
-    print("Read %s sentence pairs" % len(pairs))
-    print(pairs[0][0].decode('utf-8'),pairs[0][1].decode('gb2312'))
-    #pairs = filterPairs(pairs)
-    #print("Trimmed to %s sentence pairs" % len(pairs))
-    print("Counting words...")
-#     for pair in pairs:
-#         input_lang.addSentence(pair[0].decode('utf-8'))
-#         output_lang.addSentence(pair[1].decode('gb2312'))
-    print("Counted words:")
-    print(input_lang.name, input_lang.n_words)
-    print(output_lang.name, output_lang.n_words)
-    return input_lang, output_lang, pairs
 
 
-if __name__=='__main__':
-    inputLang, outputLang, pairs = prepareData('zh','en')
+if __name__=="__main__":
+    #read data and process data
+    input_valid, output_valid, pairs = readValidLangs(lang1='zh', lang2='en')
+    
+    #save data
+    input_valid.save('../data/en_valid.pkl')
+    output_valid.save('../data/zh_valid.pkl')
 
-    inputLang.save('../data/en_train1.pkl')
-    outputLang.save('../data/zh_train1.pkl')
-
-    h5 = h5py.File('../data/train_afterProcess1.h5py','w')
+    h5 = h5py.File('../data/valid_data.h5py','w')
     h5.create_dataset('pairs',data=pairs,dtype = 'S400')
     h5.close()
+
+
     
-    
+    #load data
+    import dataProcess as dp
+    h5py_file = h5py.File('../data/valid_data.h5py','r')
+    pairs = h5py_file['pairs']
+    print(len(pairs))
+    print(pairs[0][0].decode('utf-8'))
+    print(pairs[0][1].decode('gb2312'))
+
+    inputlang = dp.Lang('en')
+    outputlang = dp.Lang('zh')
+    inputlang.load('../data/en_valid.pkl')
+    outputlang.load('../data/zh_valid.pkl')
+
+    ####测试用，上面两行注释的语句在真正运行的时候要用到的##################################################################
+    # pairs = pairs[0:1000]
+    # for pair in pairs:
+    #     inputlang.addSentence(pair[0].decode('utf-8'))
+    #     outputlang.addSentence(pair[1].decode('gb2312'))
+
+    print(inputlang.name,inputlang.n_words)
+    print(outputlang.name,outputlang.n_words)
+    #h5py_file.close()

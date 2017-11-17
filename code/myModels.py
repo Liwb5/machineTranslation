@@ -12,22 +12,48 @@ from torch.autograd import Variable
 from torch import optim
 import torch.nn.functional as F
 
+import time
+import math
+
+def asMinutes(s):
+    m = math.floor(s / 60)
+    s -= m * 60
+    return '%dm %ds' % (m, s)
+
+
+def timeSince(since, percent):
+    now = time.time()
+    s = now - since
+    es = s / (percent) #总时间
+    rs = es - s        #总时间减去已经运行的时间等于还剩下的时间
+    return '%s (- %s)' % (asMinutes(s), asMinutes(rs))
+
+#-----------some hyperparameters ----------------------#
+use_cuda = torch.cuda.is_available()
 
 SOS_token = 0
 EOS_token = 1
-use_cuda = torch.cuda.is_available()
-MAX_LENGTH = 30
-teacher_forcing_ratio = 0.9  #在训练时解码器使用labels（平行预料）进行训练的概率
-LEARNING_RATE = 0.01
-modeName = 'first'
 
+teacher_forcing_ratio = 0.9  #在训练时解码器使用labels（平行预料）进行训练的概率
+MAX_LENGTH = 30
+LEARNING_RATE = 0.01
+HIDDEN_STATE = 256
+n_layers = 1   #对一个句子循环RNN训练的次数
+dropout_p = 0.1  
+#-----------for Visualization----------------------#
 from hyperboard import Agent
 agent = Agent(address='127.0.0.1',port=5100)
 #agent = Agent(address='172.18.216.69',port=5000)
-hyperparameters = {'learning rate':LEARNING_RATE}
-name = agent.register(hyperparameters, 'loss',overwrite=True)
+hyperparameters = {'learning rate':LEARNING_RATE,
+                   'max_length':MAX_LENGTH,
+                  'teacher_forcing_ratio':teacher_forcing_ratio,
+                  'hidden_state':HIDDEN_STATE,
+                   'n_layers':n_layers
+                  }
+name = agent.register(hyperparameters, 'ML_loss',overwrite=True)
 
 
+#------------RNN models-----------------------------#
 class EncoderRNN(nn.Module):
     #input_size是指词典的大小(毕竟要建立embedding)，hidden_size是hidden_state的维度
     def __init__(self, input_size, hidden_size, n_layers=1):
@@ -134,180 +160,145 @@ class AttnDecoderRNN(nn.Module):
         else:
             return result
 
-
-
-#########################training#####################################
-### 将数据进行处理成pytorch变量，方便转换成embedded
-#返回词对应的下标
-def indexesFromSentence(lang, sentence):
-    #return [lang.word2index[word] for word in sentence.split(' ')]
-    result = []
-    all_lang_keys = lang.word2index.keys()
-    for word in sentence.split(' '):
-        if word in all_lang_keys:#判断词是否在词典中，因为词典中有些出现次数太少的词被删掉了
-            result.append(lang.word2index[word])
-    return result
-
-#将词转换成variable
-def variableFromSentence(lang, sentence):
-    indexes = indexesFromSentence(lang, sentence)
-    indexes.append(EOS_token)#一个句子最后都要加上一个结束符
-    result = Variable(torch.LongTensor(indexes).view(-1, 1))
-    if use_cuda:
-        return result.cuda()
-    else:
-        return result
-
+        
+        
+class training():
+    def __init__(self):
+        pass
     
-def variablesFromPair(pair,input_lang, output_lang):
-    #注意这里要先解码，因为保存到h5py里面的时候要编码，所以现在要解码
-    input_variable = variableFromSentence(input_lang, pair[0].decode('utf-8'))
-    target_variable = variableFromSentence(output_lang, pair[1].decode('gb2312'))
-    return (input_variable, target_variable)
+    def indexes2variables(self, indexes):
+            result = Variable(torch.LongTensor(indexes).view(-1,1))
+            if use_cuda:
+                return result.cuda()
+            else:
+                return result
+    
+    
+    def train(self, input_variable, target_variable, encoder, decoder, encoder_optimizer,\
+              decoder_optimizer, criterion, max_length=MAX_LENGTH):
+        encoder_hidden = encoder.initHidden()
 
+        encoder_optimizer.zero_grad()
+        decoder_optimizer.zero_grad()
 
+        #input_variable已经在函数外变成了tensor了，tensor的元素是词的下标
+        input_length = input_variable.size()[0]#source sentence 的长度
+        target_length = target_variable.size()[0]#目标句子的长度
 
-def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, max_length=MAX_LENGTH):
-    encoder_hidden = encoder.initHidden()
+        encoder_outputs = Variable(torch.zeros(max_length, encoder.hidden_size))#max_length=10，也就是句子的最长长度，hidden_size是256，所以encoder_outputs是矩阵10X256
+        encoder_outputs = encoder_outputs.cuda() if use_cuda else encoder_outputs
 
-    encoder_optimizer.zero_grad()
-    decoder_optimizer.zero_grad()
+        loss = 0
 
-    #input_variable已经在函数外变成了tensor了，tensor的元素是词的下标
-    input_length = input_variable.size()[0]#source sentence 的长度
-    target_length = target_variable.size()[0]#目标句子的长度
+        for ei in range(input_length):#句子有多长就迭代多少次
+            encoder_output, encoder_hidden = encoder(
+                input_variable[ei], encoder_hidden)
+            encoder_outputs[ei] = encoder_output[0][0]#将每个词encoder的output记录下来
 
-    encoder_outputs = Variable(torch.zeros(max_length, encoder.hidden_size))#max_length=10，也就是句子的最长长度，hidden_size是256，所以encoder_outputs是矩阵10X256
-    encoder_outputs = encoder_outputs.cuda() if use_cuda else encoder_outputs
+        decoder_input = Variable(torch.LongTensor([[SOS_token]]))
+        decoder_input = decoder_input.cuda() if use_cuda else decoder_input
 
-    loss = 0
+        decoder_hidden = encoder_hidden#encoder最后一层的hidden_state传给decoder作为decoder的第一个hidden_state
 
-    for ei in range(input_length):#句子有多长就迭代多少次
-        encoder_output, encoder_hidden = encoder(
-            input_variable[ei], encoder_hidden)
-        encoder_outputs[ei] = encoder_output[0][0]#将每个词encoder的output记录下来
+        use_teacher_forcing = True if random.random() < teacher_forcing_ratio else False
 
-    decoder_input = Variable(torch.LongTensor([[SOS_token]]))
-    decoder_input = decoder_input.cuda() if use_cuda else decoder_input
+        if use_teacher_forcing:
+            # Teacher forcing: Feed the target as the next input
+            for di in range(target_length):
+                #encoder_outputs作为decoder的输入，是为了改变attention。
+                decoder_output, decoder_hidden, decoder_attention = decoder(
+                    decoder_input, decoder_hidden, encoder_output, encoder_outputs)
+                loss += criterion(decoder_output, target_variable[di])#这两个变量是什么形式
+                decoder_input = target_variable[di]  # Teacher forcing这个是直接给答案，也就是一个单词，进入decoder里面再变成词向量
 
-    decoder_hidden = encoder_hidden#encoder最后一层的hidden_state传给decoder作为decoder的第一个hidden_state
+        else:#这边是不直接给答案，而是每次output那里选择概率最大的作为下一个输入
+            # Without teacher forcing: use its own predictions as the next input
+            for di in range(target_length):
+                decoder_output, decoder_hidden, decoder_attention = decoder(
+                    decoder_input, decoder_hidden, encoder_output, encoder_outputs)
+                #从decoder的类中可以知道，decoder_output是softmax出来的，即所有词的概率。
+                #topk函数是查找最大的K 个数，这里参数是1，topv就是value，topi是index，也就是词对应的下标
+                topv, topi = decoder_output.data.topk(1)
+                ni = topi[0][0]
 
-    use_teacher_forcing = True if random.random() < teacher_forcing_ratio else False
+                decoder_input = Variable(torch.LongTensor([[ni]]))
+                decoder_input = decoder_input.cuda() if use_cuda else decoder_input
 
-    if use_teacher_forcing:
-        # Teacher forcing: Feed the target as the next input
-        for di in range(target_length):
-        	#encoder_outputs作为decoder的输入，是为了改变attention。
-            decoder_output, decoder_hidden, decoder_attention = decoder(
-                decoder_input, decoder_hidden, encoder_output, encoder_outputs)
-            loss += criterion(decoder_output, target_variable[di])#这两个变量是什么形式
-            decoder_input = target_variable[di]  # Teacher forcing这个是直接给答案，也就是一个单词，进入decoder里面再变成词向量
+                loss += criterion(decoder_output, target_variable[di])
+                if ni == EOS_token:
+                    break
 
-    else:#这边是不直接给答案，而是每次output那里选择概率最大的作为下一个输入
-        # Without teacher forcing: use its own predictions as the next input
-        for di in range(target_length):
-            decoder_output, decoder_hidden, decoder_attention = decoder(
-                decoder_input, decoder_hidden, encoder_output, encoder_outputs)
-            #从decoder的类中可以知道，decoder_output是softmax出来的，即所有词的概率。
-            #topk函数是查找最大的K 个数，这里参数是1，topv就是value，topi是index，也就是词对应的下标
-            topv, topi = decoder_output.data.topk(1)
-            ni = topi[0][0]
+        loss.backward()#如何理解这一步反向梯度对encoder和decoder都有效
 
-            decoder_input = Variable(torch.LongTensor([[ni]]))
-            decoder_input = decoder_input.cuda() if use_cuda else decoder_input
+        encoder_optimizer.step()
+        decoder_optimizer.step()
 
-            loss += criterion(decoder_output, target_variable[di])
-            if ni == EOS_token:
-                break
+        return loss.data[0] / target_length
 
-    loss.backward()#如何理解这一步反向梯度对encoder和decoder都有效
-
-    encoder_optimizer.step()
-    decoder_optimizer.step()
-
-    return loss.data[0] / target_length
-
-######################################################################
-# This is a helper function to print time elapsed and estimated time
-# remaining given the current time and progress %.
-#
-
-import time
-import math
-
-
-def asMinutes(s):
-    m = math.floor(s / 60)
-    s -= m * 60
-    return '%dm %ds' % (m, s)
-
-
-def timeSince(since, percent):
-    now = time.time()
-    s = now - since
-    es = s / (percent) #总时间
-    rs = es - s        #总时间减去已经运行的时间等于还剩下的时间
-    return '%s (- %s)' % (asMinutes(s), asMinutes(rs))
-
-######################################################################
-# The whole training process looks like this:
-#
-# -  Start a timer
-# -  Initialize optimizers and criterion
-# -  Create set of training pairs
-# -  Start empty losses array for plotting
-#
-# Then we call ``train`` many times and occasionally print the progress (%
-# of examples, time so far, estimated time) and average loss.
-#
-
-def trainIters(encoder, decoder, inputlang, outputlang, pairs, n_iters, print_every=1000, plot_every=100, learning_rate=0.01, save_model_every=10000):
-    start = time.time()
-    plot_losses = []
-    print_loss_total = 0  # Reset every print_every
-    plot_loss_total = 0  # Reset every plot_every
-
-    #考虑改成其他的优化器
-    encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
-    decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
-    #这里的training_pairs经过variableFromPair处理后，每个元素已经是一个tensor了，并且是单词所在的下标，为了可以和embedd匹配。
-    #training_pairs = [variablesFromPair(random.choice(pairs))
-    #                 for i in range(n_iters)]
-    #print(random.choice(training_pairs)[0].data)
-    criterion = nn.NLLLoss()
-
-    for iter in range(1, n_iters + 1):
-        #training_pair = training_pairs[iter - 1]
-        #################@#%…………&&&
         
-        training_pair = variablesFromPair(random.choice(pairs),inputlang,outputlang)
-        input_variable = training_pair[0]
-        target_variable = training_pair[1]
+    ######################################################################
+    # The whole training process looks like this:
+    #
+    # -  Start a timer
+    # -  Initialize optimizers and criterion
+    # -  Create set of training pairs
+    # -  Start empty losses array for plotting
+    #
+    # Then we call ``train`` many times and occasionally print the progress (%
+    # of examples, time so far, estimated time) and average loss.
+    #
 
-        loss = train(input_variable, target_variable, encoder,
-                     decoder, encoder_optimizer, decoder_optimizer, criterion)
-        print_loss_total += loss
-        plot_loss_total += loss
+    def trainIters(encoder, decoder, inputlang, outputlang, pairs, n_iters, print_every=1000, plot_every=100, learning_rate=0.01, save_model_every=10000):
+        start = time.time()
+        plot_losses = []
+        print_loss_total = 0  # Reset every print_every
+        plot_loss_total = 0  # Reset every plot_every
 
-        if iter % print_every == 0:
-            print_loss_avg = print_loss_total / print_every
-            print_loss_total = 0
-            print('%s (%d %d%%) %.4f' % (timeSince(start, iter / n_iters),
-                                         iter, iter / n_iters * 100, print_loss_avg))
+        #考虑改成其他的优化器
+        encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
+        decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
+        #这里的training_pairs经过variableFromPair处理后，每个元素已经是一个tensor了，并且是单词所在的下标，为了可以和embedd匹配。
+        #training_pairs = [variablesFromPair(random.choice(pairs))
+        #                 for i in range(n_iters)]
+        #print(random.choice(training_pairs)[0].data)
+        criterion = nn.NLLLoss()
 
-        if iter % plot_every == 0:
-            plot_loss_avg = plot_loss_total / plot_every
-            agent.append(name, iter, plot_loss_avg)
-            plot_losses.append(plot_loss_avg)
-            plot_loss_total = 0
+        for iter in range(1, n_iters + 1):
+            #training_pair = training_pairs[iter - 1]
+            #################@#%…………&&&
+
+#             training_pair = variablesFromPair(random.choice(pairs),inputlang,outputlang)
+#             input_variable = training_pair[0]
+#             target_variable = training_pair[1]
+            sentence = random.choice(pairs)
+            en_indexes = inputlang(sentence[0].decode('utf-8'))
+            zh_indexes = outputlang(sentence[1].decode('gb2312'))
+            input_variable = self.indexes2variables(en_indexes)
+            target_varibale = self.indexes2variables(zh_indexes)
+
             
-        if iter % save_model_every == 0:
-            torch.save(encoder,'../models/encoder{0}.m{1}'.format(modelName,iter))
-            torch.save(decoder,'../models/decoder{0}.m{1}'.format(modeName,iter))
-            pass
+            loss = self.train(input_variable, target_variable, encoder,
+                         decoder, encoder_optimizer, decoder_optimizer, criterion)
+            print_loss_total += loss
+            plot_loss_total += loss
 
-        
-        
+            if iter % print_every == 0:
+                print_loss_avg = print_loss_total / print_every
+                print_loss_total = 0
+                print('%s (%d %d%%) %.4f' % (timeSince(start, iter / n_iters),
+                                             iter, iter / n_iters * 100, print_loss_avg))
+
+            if iter % plot_every == 0:
+                plot_loss_avg = plot_loss_total / plot_every
+                agent.append(name, iter, plot_loss_avg)
+                plot_losses.append(plot_loss_avg)
+                plot_loss_total = 0
+
+            if iter % save_model_every == 0:
+                torch.save(encoder,'../models/encoder.m{0}'.format(2))
+                torch.save(decoder,'../models/decoder.m{0}'.format(2))
+                pass
+
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
@@ -376,20 +367,27 @@ def evaluateRandomly(encoder, decoder, inputlang, outputlang,pairs, n=100):
         output_sentence = ' '.join(output_words)
         print('<', output_sentence)
         print('')
-        
-        
 
-        
-        
-if __name__=='__main__':
-    hidden_size = 256
-    encoder1 = EncoderRNN(inputlang.n_words, hidden_size)
-    attn_decoder1 = AttnDecoderRNN(hidden_size, outputlang.n_words,
-                                   1, dropout_p=0.1)
 
-    if use_cuda:
-        encoder1 = encoder1.cuda()
-        attn_decoder1 = attn_decoder1.cuda()
 
-    trainIters(encoder1, attn_decoder1, inputlang, outputlang, 80000, print_every=100, save_model_every=2000)
+def evaluateValidData(encoder, decoder, inputlang, outputlang, pairs):
+    len = len(pairs)
+    for i in range(len):
+        pair = pairs[i]
+        output_words, attentions = evaluate(encoder, decoder, pair[0].decode('utf-8'),inputlang, outputlang)
+        output_sentence = ' '.join(output_words)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
