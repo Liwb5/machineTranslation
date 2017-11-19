@@ -127,6 +127,8 @@ class AttnDecoderRNN(nn.Module):
 
         attn_weights = F.softmax(
             self.attn(torch.cat((embedded[0], hidden[0]), 1)))
+        #print(attn_weights.unsqueeze(0).data)
+        #print(encoder_outputs.unsqueeze(0).data)
         attn_applied = torch.bmm(attn_weights.unsqueeze(0),
                                  encoder_outputs.unsqueeze(0))
 
@@ -340,7 +342,7 @@ import numpy as np
 # attention outputs for display later.
 #
 
-def evaluate(encoder, decoder, sentence, input_lang, output_lang, max_length=MAX_LENGTH):
+def evaluate(encoder, decoder, sentence, input_lang, output_lang, max_length=50):
     input_variable = variableFromSentence(input_lang, sentence)
     input_length = input_variable.size()[0]
     encoder_hidden = encoder.initHidden()
@@ -355,9 +357,9 @@ def evaluate(encoder, decoder, sentence, input_lang, output_lang, max_length=MAX
 
     decoder_input = Variable(torch.LongTensor([[SOS_token]]))  # SOS
     decoder_input = decoder_input.cuda() if use_cuda else decoder_input
-
+    #print(encoder_outputs.data)
     decoder_hidden = encoder_hidden
-
+    #print(decoder_hidden.data)
     decoded_words = []
     decoder_attentions = torch.zeros(max_length, max_length)
 
@@ -389,7 +391,7 @@ def evaluateRandomly(encoder, decoder, inputlang, outputlang,pairs, n=100):
         pair = random.choice(pairs)
         print('>', pair[0].decode('utf-8'))
         print('=', pair[1].decode('gb2312'))
-        output_words, attentions = evaluate(encoder, decoder, pair[0].decode('utf-8'),inputlang, outputlang, max_length=100)
+        output_words, attentions = evaluate(encoder, decoder, pair[0].decode('utf-8'),inputlang, outputlang, max_length=MAX_LENGTH)
         output_sentence = ' '.join(output_words)
         print('<', output_sentence)
         print('')
@@ -399,7 +401,7 @@ def calculateValidData_BLEU_Score(encoder, decoder, inputlang, outputlang, pairs
     predict_words = []
     bleu_score = 0.0
     for pair in pairs:
-        output_words, attentions = evaluate(encoder, decoder, pair[0].decode('utf-8'),inputlang, outputlang, max_length=100)
+        output_words, attentions = evaluate(encoder, decoder, pair[0].decode('utf-8'),inputlang, outputlang, max_length=MAX_LENGTH)
         #output_sentence = ' '.join(output_words)
         label_words = nltk.word_tokenize(pair[1].decode('gb2312'))
         bleu_score += nltk.translate.bleu_score.sentence_bleu([label_words],output_words)
@@ -412,7 +414,7 @@ def evaluateForTestData(encoder, decoder, inputlang, pairs, n=100):
     for i in range(n):
         pair = random.choice(pairs)
         print('>', pair[0].decode('utf-8'))
-        output_words, attentions = evaluate(encoder, decoder, pair[0].decode('utf-8'),inputlang, outputlang, max_length=100)
+        output_words, attentions = evaluate(encoder, decoder, pair[0].decode('utf-8'),inputlang, outputlang, max_length=MAX_LENGTH)
         output_sentence = ' '.join(output_words)
         print('<', output_sentence)
         print('')
@@ -420,7 +422,7 @@ def evaluateForTestData(encoder, decoder, inputlang, pairs, n=100):
 def predictTestData(encoder, decoder, inputlang, pairs):
     predicted_sentences = []
     for pair in pairs:
-        output_words, attentions = evaluate(encoder, decoder, pair.decode('utf-8'),inputlang, outputlang, max_length=100)#需要知道pair是否需要下标
+        output_words, attentions = evaluate(encoder, decoder, pair.decode('utf-8'),inputlang, outputlang, max_length=MAX_LENGTH)#需要知道pair是否需要下标
         output_sentence = ' '.join(output_words)
         predicted_sentences.append(output_sentence)
     return predicted_sentences
