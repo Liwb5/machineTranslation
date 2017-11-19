@@ -21,12 +21,12 @@ SOS_token = 0
 EOS_token = 1
 
 teacher_forcing_ratio = 0.9  #在训练时解码器使用labels（平行预料）进行训练的概率
-MAX_LENGTH = 30
+MAX_LENGTH = 50
 LEARNING_RATE = 0.01
 HIDDEN_STATE = 256
-n_layers = 1   #对一个句子循环RNN训练的次数
-dropout_p = 0.1  
-modeName = 'first'
+N_LAYERS = 1   #对一个句子循环RNN训练的次数
+DROPOUT_P = 0.1
+modelName = 'first'
 
 
 from hyperboard import Agent
@@ -36,7 +36,7 @@ hyperparameters = {'learning rate':LEARNING_RATE,
                    'max_length':MAX_LENGTH,
                   'teacher_forcing_ratio':teacher_forcing_ratio,
                   'hidden_state':HIDDEN_STATE,
-                   'n_layers':n_layers
+                   'n_layers':N_LAYERS
                   }
 name = agent.register(hyperparameters, 'loss',overwrite=True)
 
@@ -298,13 +298,13 @@ def trainIters(encoder, decoder, inputlang, outputlang, pairs, n_iters, print_ev
         target_variable = training_pair[1]
         #如果句子太长，丢弃它
         if len(input_variable) > MAX_LENGTH or len(target_variable) > MAX_LENGTH:
-            continue
-            
-        #print(training_pair[0])
-        loss = train(input_variable, target_variable, encoder,
-                     decoder, encoder_optimizer, decoder_optimizer, criterion)
-        print_loss_total += loss
-        plot_loss_total += loss
+            pass
+        else:     
+            #print(training_pair[0])
+            loss = train(input_variable, target_variable, encoder,
+                         decoder, encoder_optimizer, decoder_optimizer, criterion)
+            print_loss_total += loss
+            plot_loss_total += loss
 
         if iter % print_every == 0:
             print_loss_avg = print_loss_total / print_every
@@ -320,7 +320,7 @@ def trainIters(encoder, decoder, inputlang, outputlang, pairs, n_iters, print_ev
             
         if iter % save_model_every == 0:
             torch.save(encoder,'../models/encoder{0}.m{1}'.format(modelName,iter))
-            torch.save(decoder,'../models/decoder{0}.m{1}'.format(modeName,iter))
+            torch.save(decoder,'../models/decoder{0}.m{1}'.format(modelName,iter))
             pass
 
         
@@ -368,7 +368,7 @@ def evaluate(encoder, decoder, sentence, input_lang, output_lang, max_length=MAX
         topv, topi = decoder_output.data.topk(1)
         ni = topi[0][0]
         if ni == EOS_token:
-            decoded_words.append('<EOS>')  #检测到结束符就停止
+            #decoded_words.append('<EOS>')  #检测到结束符就停止
             break
         else:
             decoded_words.append(output_lang.index2word[ni])
@@ -389,7 +389,7 @@ def evaluateRandomly(encoder, decoder, inputlang, outputlang,pairs, n=100):
         pair = random.choice(pairs)
         print('>', pair[0].decode('utf-8'))
         print('=', pair[1].decode('gb2312'))
-        output_words, attentions = evaluate(encoder, decoder, pair[0].decode('utf-8'),inputlang, outputlang)
+        output_words, attentions = evaluate(encoder, decoder, pair[0].decode('utf-8'),inputlang, outputlang, max_length=100)
         output_sentence = ' '.join(output_words)
         print('<', output_sentence)
         print('')
@@ -399,7 +399,7 @@ def calculateValidData_BLEU_Score(encoder, decoder, inputlang, outputlang, pairs
     predict_words = []
     bleu_score = 0.0
     for pair in pairs:
-        output_words, attentions = evaluate(encoder, decoder, pair[0].decode('utf-8'),inputlang, outputlang)
+        output_words, attentions = evaluate(encoder, decoder, pair[0].decode('utf-8'),inputlang, outputlang, max_length=100)
         #output_sentence = ' '.join(output_words)
         label_words = nltk.word_tokenize(pair[1].decode('gb2312'))
         bleu_score += nltk.translate.bleu_score.sentence_bleu([label_words],output_words)
@@ -412,12 +412,18 @@ def evaluateForTestData(encoder, decoder, inputlang, pairs, n=100):
     for i in range(n):
         pair = random.choice(pairs)
         print('>', pair[0].decode('utf-8'))
-        output_words, attentions = evaluate(encoder, decoder, pair[0].decode('utf-8'),inputlang, outputlang)
+        output_words, attentions = evaluate(encoder, decoder, pair[0].decode('utf-8'),inputlang, outputlang, max_length=100)
         output_sentence = ' '.join(output_words)
         print('<', output_sentence)
         print('')
         
-        
+def predictTestData(encoder, decoder, inputlang, pairs):
+    predicted_sentences = []
+    for pair in pairs:
+        output_words, attentions = evaluate(encoder, decoder, pair.decode('utf-8'),inputlang, outputlang, max_length=100)#需要知道pair是否需要下标
+        output_sentence = ' '.join(output_words)
+        predicted_sentences.append(output_sentence)
+    return predicted_sentences
         
         
 if __name__=='__main__':

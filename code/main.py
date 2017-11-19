@@ -46,7 +46,7 @@ if __name__=='__main__':
     print(len(inputlang.index2word))
     all_en_words = inputlang.word2count.copy()
     for word in all_en_words:
-        if  all_en_words[word] <= 10:
+        if  all_en_words[word] <= 12:
             inputlang.word2count.pop(word)
             index = inputlang.word2index[word]
             inputlang.word2index.pop(word)
@@ -68,8 +68,9 @@ if __name__=='__main__':
         attn_decoder1 = attn_decoder1.cuda()
 
     m.trainIters(encoder1, attn_decoder1, inputlang, outputlang,pairs, n_iters = 800000, \
-                 plot_every = 1000, print_every=1000, save_model_every=50000)
-    
+                 plot_every = 1000, print_every=1000, save_model_every=20000)
+    #m.trainIters(encoder1, attn_decoder1, inputlang, outputlang,pairs, n_iters = 100, \
+    #              plot_every = 1, print_every=10, save_model_every=100)    
     
     m.evaluateRandomly(encoder1,attn_decoder1,inputlang,outputlang,pairs,n = 100)
     
