@@ -5,6 +5,7 @@ import unicodedata
 import string
 import re
 import random
+import os
 
 import torch
 import torch.nn as nn
@@ -13,7 +14,7 @@ from torch import optim
 import torch.nn.functional as F
 
 import nltk
-
+os.environ["CUDA_VISIBLE_DEVICES"] = '1'
 #--------some hyperparameters-------------------#
 use_cuda = torch.cuda.is_available()
 
@@ -174,14 +175,11 @@ def variableFromSentence(lang, sentence):
         return result
 
     
-def variablesFromPair(pair,input_lang, output_lang):
+def variablesFromPair(input_sent,output_sent,input_lang, output_lang):
     #注意这里要先解码，因为保存到h5py里面的时候要编码，所以现在要解码
-    input_variable = variableFromSentence(input_lang, pair[0].decode('utf-8'))
-    try:
-        target_variable = variableFromSentence(output_lang, pair[1].decode('gb2312'))
-    except UnicodeDecodeError:
-        print(pair[1])
-    return (input_variable, target_variable)
+    input_variable = variableFromSentence(input_lang, input_sent)
+    target_variable = variableFromSentence(output_lang, output_sent)
+    return input_variable, target_variable
 
 
 
@@ -215,7 +213,7 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
     if use_teacher_forcing:
         # Teacher forcing: Feed the target as the next input
         for di in range(target_length):
-        	#encoder_outputs作为decoder的输入，是为了改变attention。
+            #encoder_outputs作为decoder的输入，是为了改变attention。
             decoder_output, decoder_hidden, decoder_attention = decoder(
                 decoder_input, decoder_hidden, encoder_output, encoder_outputs)
             loss += criterion(decoder_output, target_variable[di])#这两个变量是什么形式
@@ -297,19 +295,27 @@ def trainIters(encoder, decoder, inputlang, outputlang, pairs, n_iters, print_ev
     for iter in range(1, n_iters + 1):
         #training_pair = training_pairs[iter - 1]
         #################@#%…………&&&
-        
-        training_pair = variablesFromPair(pairs[iter-1],inputlang,outputlang)
-        input_variable = training_pair[0]
-        target_variable = training_pair[1]
-        #如果句子太长，丢弃它
-        if len(input_variable) > MAX_LENGTH or len(target_variable) > MAX_LENGTH:
-            pass
-        else:     
-            #print(training_pair[0])
-            loss = train(input_variable, target_variable, encoder,
-                         decoder, encoder_optimizer, decoder_optimizer, criterion)
-            print_loss_total += loss
-            plot_loss_total += loss
+        pair = pairs[iter-1]
+        try:
+            input_sent = pair[0].decode('utf-8')
+            output_sent = pair[1].decode('gb2312')
+                
+            input_variable,target_variable = variablesFromPair(input_sent,output_sent,inputlang,outputlang)
+
+            #如果句子太长，丢弃它
+            if len(input_variable) > MAX_LENGTH or len(target_variable) > MAX_LENGTH:#if can not decode gb2312 then pass
+                print('sentence is too long and the length is: ',len(input_variable),'  ', len(target_variable))
+
+            else:     
+                #print(training_pair[0])
+                loss = train(input_variable, target_variable, encoder,
+                             decoder, encoder_optimizer, decoder_optimizer, criterion)
+                print_loss_total += loss
+                plot_loss_total += loss
+
+        except UnicodeDecodeError:
+            print('Unicode decode error and the number is: ', iter-1)
+
 
         if iter % print_every == 0:
             print_loss_avg = print_loss_total / print_every
