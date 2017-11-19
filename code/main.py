@@ -23,7 +23,7 @@ EOS_token = 1
 if __name__=='__main__':
     
     #loading data
-    h5py_file = h5py.File('../data/train_afterProcess.h5py','r')
+    h5py_file = h5py.File('../data/train_pairs.h5py','r')
     pairs = h5py_file['pairs']
 
     print(pairs[0][0].decode('utf-8'))
@@ -31,8 +31,8 @@ if __name__=='__main__':
 
     inputlang = dp.Lang('en')
     outputlang = dp.Lang('zh')
-    inputlang.load('../data/en_train.pkl')
-    outputlang.load('../data/zh_train.pkl')
+    inputlang.load('../data/inputlang.pkl')
+    outputlang.load('../data/outputlang.pkl')
 
     print(inputlang.name,inputlang.n_words)
     print(outputlang.name,outputlang.n_words)
@@ -67,8 +67,8 @@ if __name__=='__main__':
         encoder1 = encoder1.cuda()
         attn_decoder1 = attn_decoder1.cuda()
 
-    m.trainIters(encoder1, attn_decoder1, inputlang, outputlang,pairs, n_iters = 800000, \
-                 plot_every = 1000, print_every=1000, save_model_every=20000)
+    m.trainIters(encoder1, attn_decoder1, inputlang, outputlang,pairs, n_iters = 8000000, \
+                 plot_every = 1000, print_every=1000, save_model_every=400000,save_model_parameters=80000)
     #m.trainIters(encoder1, attn_decoder1, inputlang, outputlang,pairs, n_iters = 100, \
     #              plot_every = 1, print_every=10, save_model_every=100)    
     

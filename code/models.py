@@ -20,13 +20,13 @@ use_cuda = torch.cuda.is_available()
 SOS_token = 0
 EOS_token = 1
 
-teacher_forcing_ratio = 0.9  #在训练时解码器使用labels（平行预料）进行训练的概率
-MAX_LENGTH = 50
+teacher_forcing_ratio = 1.0  #在训练时解码器使用labels（平行预料）进行训练的概率
+MAX_LENGTH = 60
 LEARNING_RATE = 0.01
 HIDDEN_STATE = 256
 N_LAYERS = 1   #对一个句子循环RNN训练的次数
 DROPOUT_P = 0.1
-modelName = 'first'
+modelName = 'second'
 
 
 from hyperboard import Agent
@@ -177,7 +177,10 @@ def variableFromSentence(lang, sentence):
 def variablesFromPair(pair,input_lang, output_lang):
     #注意这里要先解码，因为保存到h5py里面的时候要编码，所以现在要解码
     input_variable = variableFromSentence(input_lang, pair[0].decode('utf-8'))
-    target_variable = variableFromSentence(output_lang, pair[1].decode('gb2312'))
+    try:
+        target_variable = variableFromSentence(output_lang, pair[1].decode('gb2312'))
+    except UnicodeDecodeError:
+        print(pair[1])
     return (input_variable, target_variable)
 
 
@@ -276,7 +279,7 @@ def timeSince(since, percent):
 # of examples, time so far, estimated time) and average loss.
 #
 
-def trainIters(encoder, decoder, inputlang, outputlang, pairs, n_iters, print_every=1000, plot_every=100, learning_rate=0.01, save_model_every=10000):
+def trainIters(encoder, decoder, inputlang, outputlang, pairs, n_iters, print_every=1000, plot_every=100, learning_rate=0.01, save_model_every=10000,save_model_parameters = 1000):
     start = time.time()
     plot_losses = []
     print_loss_total = 0  # Reset every print_every
@@ -295,7 +298,7 @@ def trainIters(encoder, decoder, inputlang, outputlang, pairs, n_iters, print_ev
         #training_pair = training_pairs[iter - 1]
         #################@#%…………&&&
         
-        training_pair = variablesFromPair(random.choice(pairs),inputlang,outputlang)
+        training_pair = variablesFromPair(pairs[iter-1],inputlang,outputlang)
         input_variable = training_pair[0]
         target_variable = training_pair[1]
         #如果句子太长，丢弃它
@@ -323,7 +326,10 @@ def trainIters(encoder, decoder, inputlang, outputlang, pairs, n_iters, print_ev
         if iter % save_model_every == 0:
             torch.save(encoder,'../models/encoder{0}.m{1}'.format(modelName,iter))
             torch.save(decoder,'../models/decoder{0}.m{1}'.format(modelName,iter))
-            pass
+            
+        if iter % save_model_parameters == 0:
+            torch.save(encoder.state_dict(), '../models/encoder_params{0}.m{1}'.format(modelName,iter))
+            torch.save(decoder.state_dict(), '../models/decoder_params{0}.m{1}'.format(modelName,iter))
 
         
         
