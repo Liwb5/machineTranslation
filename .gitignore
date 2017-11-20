@@ -1,3 +1,8 @@
+bengio/hypercurve/
+bengio/.ipynb*
+bengio/__pycache__/
+bengio/pred.sgm
+bengio/pred.txt
 data/
 papers/
 records/
