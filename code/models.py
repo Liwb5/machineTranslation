@@ -55,7 +55,7 @@ class EncoderRNN(nn.Module):
     #input是一个句子(这个句子已经通过数据处理的类转换成下标，这样可以对应一个embedded)
     #hidden 是上一个迭代中的hidden，即pre_hidden
     def forward(self, input, hidden):
-        embedded = self.embedding(input).view(1, 1, -1)
+        embedded = self.embedding(input).view(1, 1, -1)# len * batch * nfeatures
         output = embedded
         #这个n_layers==1其实就是只相当于一个cell，对一个input(单词)和上一个hidden state
         #这里做了一个gru操作。n_layers大于1则是对同一个东西迭代多次，也许效果会好。
