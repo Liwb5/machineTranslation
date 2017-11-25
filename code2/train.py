@@ -10,7 +10,8 @@ import random
 import torch.nn.utils.rnn as rnn_utils
 
 def train(use_cuda, lr, net, epoches, train_loader): 
-    #use_cuda = torch.cuda.is_available()
+    if use_cuda:
+        net.cuda()
 
     optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr = lr)
 

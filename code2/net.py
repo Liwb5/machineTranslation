@@ -125,19 +125,19 @@ class Seq2Seq(nn.Module):
 
     #句子就以原始形式作为参数
     def forward(self, inputs, gtruths, inputs_len):
+        
+        inputs = inputs.transpose(0, 1)
+        gtruths = gtruths.transpose(0, 1)
+        
+        
         if self.use_cuda:
             inputs = Variable(inputs).long().cuda()
             gtruths = Variable(gtruths).long().cuda()
-            inputs = inputs.transpose(0, 1)
-            gtruths = gtruths.transpose(0, 1)
         else:
             inputs = Variable(inputs).long()
             gtruths = Variable(gtruths).long()
-            inputs = inputs.transpose(0, 1)
-            gtruths = gtruths.transpose(0, 1)
-
+            
         inputs = self.en_embedding(inputs)
-
         encoder_outputs = self.encoder(inputs)
 
         gtruths = self.zh_embedding(gtruths)
@@ -149,14 +149,14 @@ class Seq2Seq(nn.Module):
     def get_loss(self, logits, labels):
         if self.use_cuda:
             labels = Variable(labels).long().cuda()
-            labels = labels.transpose(0, 1)
         else:
             labels = Variable(labels).long()
-            labels = labels.transpose(0, 1)
+            
+        labels = labels.transpose(0, 1)
 
-            logits = logits.contiguous().view(-1, logits.size(-1))
-            labels = labels.contiguous().view(-1)
+        logits = logits.contiguous().view(-1, logits.size(-1))
+        labels = labels.contiguous().view(-1)
 
-            loss = torch.mean(self.cost_func(logits, labels))
+        loss = torch.mean(self.cost_func(logits, labels))
 
-            return loss
+        return loss
