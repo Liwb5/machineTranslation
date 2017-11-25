@@ -64,7 +64,7 @@ class Decoder(nn.Module):
                                     out_features = zh_voc)
 
     #encoder_outputs是maxLen*batch*(en_hidden_size*num_bidirection)
-    #inputs就是gtruths，即正确的翻译
+    #inputs就是gtruths，即正确的翻译,batch*zh_dims
     def forward(self, inputs, encoder_outputs):
 
         hx = encoder_outputs[-1] #只取最后一个输出
@@ -85,14 +85,14 @@ class Decoder(nn.Module):
         for i in range(inputs.size(0)):
             #print(inputs[i])
             hx, cx = self.lstm_cell(inputs[i], (hx, cx))
-            logits[i] = self.hx2zh_voc(hx)
+            logits[i] = self.hx2zh_voc(hx)#batch* zh_voc ==> logits[i]
             _, predicts[i] = torch.max(logits[i], 1)#我们要的是最大值对应的下标而已，所以第一个输出不要了
 
             logits[i] = logits[i].view(1, logits[i].size(0), logits[i].size(1))
             predicts[i] = predicts[i].view(1, predicts[i].size(0))
-
-        return torch.cat(logits), torch.cat(predicts)
-
+            
+        #转置之后才是2*80. 不取data的话，predicts是variable，似乎无法将其翻译成中文，
+        return torch.cat(logits).transpose(0,1), torch.cat(predicts).transpose(0, 1).data.cpu()
 
 
 
