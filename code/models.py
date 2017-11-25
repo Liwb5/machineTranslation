@@ -14,7 +14,7 @@ from torch import optim
 import torch.nn.functional as F
 
 import nltk
-os.environ["CUDA_VISIBLE_DEVICES"] = '1'
+os.environ["CUDA_VISIBLE_DEVICES"] = ''
 #--------some hyperparameters-------------------#
 use_cuda = torch.cuda.is_available()
 
@@ -55,7 +55,7 @@ class EncoderRNN(nn.Module):
     #input是一个句子(这个句子已经通过数据处理的类转换成下标，这样可以对应一个embedded)
     #hidden 是上一个迭代中的hidden，即pre_hidden
     def forward(self, input, hidden):
-        embedded = self.embedding(input).view(1, 1, -1)# len * batch * nfeatures
+        embedded = self.embedding(input).view(1, 1, -1)
         output = embedded
         #这个n_layers==1其实就是只相当于一个cell，对一个input(单词)和上一个hidden state
         #这里做了一个gru操作。n_layers大于1则是对同一个东西迭代多次，也许效果会好。
@@ -295,7 +295,8 @@ def trainIters(encoder, decoder, inputlang, outputlang, pairs, n_iters, print_ev
     for iter in range(1, n_iters + 1):
         #training_pair = training_pairs[iter - 1]
         #################@#%…………&&&
-        pair = pairs[iter-1]
+        #pair = pairs[iter-1]
+        pair = random.choice(pairs)
         try:
             input_sent = pair[0].decode('utf-8')
             output_sent = pair[1].decode('gb2312')
