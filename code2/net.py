@@ -94,7 +94,7 @@ class Decoder(nn.Module):
             predicts[i] = predicts[i].view(1, predicts[i].size(0))
             
         #转置之后才是2*80. 不取data的话，predicts是variable，似乎无法将其翻译成中文，
-        return torch.cat(logits).transpose(0,1), torch.cat(predicts).transpose(0, 1).data.cpu()
+        return torch.cat(logits), torch.cat(predicts).transpose(0, 1).data.cpu()
 
 
 
@@ -157,6 +157,7 @@ class Seq2Seq(nn.Module):
         else:
             labels = Variable(labels).long()
             
+        #labels --> len * b 
         labels = labels.transpose(0, 1)
 
         logits = logits.contiguous().view(-1, logits.size(-1))

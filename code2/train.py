@@ -49,6 +49,7 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, batch_size):
             #
             logits, predicts = net(entext, zhgtruths, enlen)
 
+            #zhlabels --> B * len * 1
             loss = net.get_loss(logits, zhlabels)
 
             print_loss += loss.data[0]
