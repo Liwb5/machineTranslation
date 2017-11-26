@@ -14,7 +14,7 @@ import seq2seq
 use_cuda = torch.cuda.is_available()
 
 
-batch_size = 2
+batch_size = 4
 en_dims = 256
 zh_dims = 256
 en_hidden_size = 256
@@ -60,7 +60,7 @@ if __name__ == '__main__':
                  batch_size = batch_size)
 
     train.train(use_cuda=use_cuda, lr = lr, net=net, epoches = Epoches, 
-                train_loader=train_loader, print_every = 100,batch_size = batch_size,
+                train_loader=train_loader, print_every = 20,batch_size = batch_size,
                transformer = tf)
     
     

@@ -15,6 +15,9 @@ class Decoder(nn.Module):
         self.zh_maxLength = zh_maxLength
         self.zh_voc = zh_voc
 
+        self.zh_embedding = nn.Embedding(num_embeddings = zh_voc,
+                                        embedding_dim = zh_dims)
+        
         self.lstm_cell = nn.LSTMCell(input_size = zh_dims,
                                     hidden_size = zh_hidden_size)
 
@@ -25,12 +28,14 @@ class Decoder(nn.Module):
         self.hx2zh_voc = nn.Linear(in_features = zh_hidden_size,
                                     out_features = zh_voc)
 
-    def forward(self, sent_inputs, hidden_state, sent_len = None):
+    def forward(self, sent_inputs, hidden_state, sent_len = None, is_eval = False):
         """
         sent_inputs: B * zh_maxLen * zh_dims的中文句子的variable
         hidden_state: B * en_maxLen * en_hidden_size 
         sent_len: B * 1  记录每个中文句子的长度
         """
+        sent_inputs = self.zh_embedding(sent_inputs)
+        
         if self.use_cuda:
             cx = Variable(torch.zeros(self.batch_size, self.zh_hidden_size)).cuda()
         else:
@@ -48,17 +53,32 @@ class Decoder(nn.Module):
 
         if self.use_cuda:
             logits = Variable(torch.zeros(self.zh_maxLength, self.batch_size, self.zh_voc)).cuda()
-            predicts = Variable(torch.zeros(self.zh_maxLength, self.batch_size)).cuda()
+            predicts = Variable(torch.zeros(self.zh_maxLength, self.batch_size)).long().cuda()
         else:
             logits = Variable(torch.zeros(self.zh_maxLength, self.batch_size, self.zh_voc))
-            predicts = Variable(torch.zeros(self.zh_maxLength, self.batch_size))
+            predicts = Variable(torch.zeros(self.zh_maxLength, self.batch_size)).long()
+        
         
         for i in range(self.zh_maxLength):
-            hx, cx = self.lstm_cell(sent_inputs[i],(hx, cx))
+            
+            if is_eval:
+                if i == 0:
+                    inputs_x = sent_inputs[0]
+                else:
+                    inputs_x = self.zh_embedding(predicts[i-1])
+            else:
+                inputs_x = sent_inputs[i]
+
+            hx, cx = self.lstm_cell(inputs_x,(hx, cx))
 
             logits[i] = self.hx2zh_voc(hx)
 
             _, predicts[i] = torch.max(logits[i], 1)
+            
+        if is_eval:     
+            #print(predicts)
+            pass
+        #print(sent_inputs[0].size())
 
         #logits --> zh_maxLen * B * zh_voc so change it to B* L * zh_voc
         #predicts --> zh_maxLen * B   so change it to B * L

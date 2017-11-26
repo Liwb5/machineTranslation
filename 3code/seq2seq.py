@@ -30,8 +30,7 @@ class Net(nn.Module):
         self.en_embedding = nn.Embedding(num_embeddings = en_voc,
                                         embedding_dim = en_dims)
 
-        self.zh_embedding = nn.Embedding(num_embeddings = zh_voc,
-                                        embedding_dim = zh_dims)
+        
 
         self.cost_func = nn.CrossEntropyLoss(weight=self.weight)
 
@@ -50,7 +49,7 @@ class Net(nn.Module):
                                 zh_maxLength = zh_maxLength,
                                 en_hidden_size = en_hidden_size)
 
-    def forward(self, inputs, gtruths, inputs_len):
+    def forward(self, inputs, gtruths, inputs_len=None, is_eval=False):
         """
         inputs: B*en_maxLen*en_dims 的list
         gtruths： B*zh_maxLen*zh_dims 的list
@@ -66,14 +65,14 @@ class Net(nn.Module):
 
         #B * maxLen * hidden_size
         inputs = self.en_embedding(inputs)
-        gtruths = self.zh_embedding(gtruths)
+        
 
         # encoder_outputs --> B * maxLen * en_hidden_size
         encoder_outputs = self.encoder(inputs)
 
         #logits --> B * L* zh_voc
         #predicts --> B * L   it is not tensor
-        logits, predicts = self.decoder(gtruths, encoder_outputs)
+        logits, predicts = self.decoder(gtruths, encoder_outputs, is_eval=is_eval)
 
         #logits -->B  * zh_maxLen * zh_voc
         #predicts --> B * zh_maxLen

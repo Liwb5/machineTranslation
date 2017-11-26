@@ -26,7 +26,7 @@ class Transformer:
             
             for i in range(len(indexes)):
                 #print(indexes[i])
-                if indexes[i] == EOS_token:
+                if indexes[i] == EOS_token or indexes[i] == __PADDING__:
                     break
                 token = self.outputlang.index2word[indexes[i]]
                 text += token

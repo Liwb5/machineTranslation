@@ -79,18 +79,21 @@ def evaluate(use_cuda, net, entext, gtruths, zhlabels, enlen, transformer):
 
     net.eval()
 
-    logits, predicts = net(entext, gtruths, enlen)
+    logits, predicts = net(entext, gtruths, enlen, is_eval = True)
 
     en_origin = [0 for i in range(len(entext))]
     zh_predicts = [0 for i in range(len(entext))]
     zh_answer = [0 for i in range(len(entext))]
+    #zh_gtruths = [0 for i in range(len(entext))]
     for i in range(len(entext)):
         en_origin[i] = transformer.index2text(entext[i], 'en')
-        zh_predicts[i] = transformer.index2text(predicts[i],'zh')
         zh_answer[i] = transformer.index2text(zhlabels[i],'zh')
+        zh_predicts[i] = transformer.index2text(predicts[i],'zh')
+        #zh_gtruths[i] = transformer.index2text(gtruths[i],'zh')
 
         print('<', en_origin[i])
         print('=', zh_answer[i])
+        #print('=', zh_gtruths[i])
         print('>',zh_predicts[i])
 
 
