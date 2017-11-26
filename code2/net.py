@@ -10,6 +10,8 @@ import random
 import torch.nn.utils.rnn as rnn_utils
 
 
+
+
 class Encoder(nn.Module):
     def __init__(self, use_cuda, en_dims, en_hidden_size, dropout_p, bidirectional=False):
 
@@ -99,7 +101,7 @@ class Decoder(nn.Module):
 
 class Seq2Seq(nn.Module):
     def __init__(self, use_cuda, en_voc, en_dims, zh_voc, zh_dims, en_hidden_size,
-                zh_hidden_size, dropout_p):
+                zh_hidden_size, dropout_p, weight):
         super(Seq2Seq, self).__init__()
 
         self.use_cuda = use_cuda
@@ -109,8 +111,10 @@ class Seq2Seq(nn.Module):
 
         self.zh_embedding = nn.Embedding(num_embeddings = zh_voc,
                                         embedding_dim = zh_dims)
-
-        self.cost_func = nn.CrossEntropyLoss()
+        
+        self.weight = torch.Tensor(weight)
+        
+        self.cost_func = nn.CrossEntropyLoss(weight=self.weight)
 
         self.encoder = Encoder(use_cuda = use_cuda,
                                 en_dims = en_dims,
@@ -141,7 +145,8 @@ class Seq2Seq(nn.Module):
         encoder_outputs = self.encoder(inputs)
 
         gtruths = self.zh_embedding(gtruths)
-        #print(type(encoder_outputs))
+        #print(encoder_outputs)
+        
         logits, predicts = self.decoder(gtruths, encoder_outputs)
 
         return logits, predicts

@@ -10,6 +10,8 @@ import train
 
 use_cuda = torch.cuda.is_available()
 
+
+
 batch_size = 2
 en_dims = 256
 zh_dims = 256
@@ -35,6 +37,9 @@ if __name__ == '__main__':
     print(inputlang.name,inputlang.n_words)
     print(outputlang.name,outputlang.n_words)
     
+    weight = [1 for i in range(outputlang.n_words)]
+    weight[2] = 0
+
     tf = Transformer(inputlang, outputlang)
     
     net = Seq2Seq(use_cuda = use_cuda,
@@ -44,6 +49,7 @@ if __name__ == '__main__':
                  zh_dims = zh_dims,
                  en_hidden_size = en_hidden_size,
                  zh_hidden_size = zh_hidden_size,
-                 dropout_p = 0)
+                 dropout_p = 0,
+                 weight = weight)
 
     train.train(use_cuda=use_cuda, lr = 0.01, net=net, epoches = 5000, train_loader=train_loader)

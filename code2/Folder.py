@@ -19,7 +19,7 @@ class Folder(data.Dataset):
         self.is_eval = is_eval
         
         if self.is_test == True:
-            num = 100
+            num = 20
             self.en_index_list = self.file['en_index_list'][0:num]
             self.en_lengths = self.file['en_lengths'][0:num]
             self.zh_index_list = self.file['zh_index_list'][0:num]
