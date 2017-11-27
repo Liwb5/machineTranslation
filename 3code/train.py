@@ -63,7 +63,8 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every,
             loss.backward()
 
             optimizer.step()            
-
+            
+            del logits, predicts
 
             if (batch_count*batch_size) % print_every == 0:
                 print_avg_loss = print_loss/print_every
@@ -79,7 +80,7 @@ def evaluate(use_cuda, net, entext, gtruths, zhlabels, enlen, transformer):
 
     net.eval()
 
-    logits, predicts = net(entext, gtruths, enlen, is_eval = True)
+    logits, predicts = net(entext, gtruths, enlen, is_eval = False)
 
     en_origin = [0 for i in range(len(entext))]
     zh_predicts = [0 for i in range(len(entext))]
@@ -95,9 +96,21 @@ def evaluate(use_cuda, net, entext, gtruths, zhlabels, enlen, transformer):
         print('=', zh_answer[i])
         #print('=', zh_gtruths[i])
         print('>',zh_predicts[i])
+        
+    net.train()
 
 
-
+def evaluateFromDataset(use_cuda, net, data_loader, transformer):
+    
+    for data in data_loader:
+        
+        entext = data['en_index_list']
+        enlen = data['en_lengths']
+        zhgtruths = data['zh_index_list'] #used for training
+        zhlen = data['zh_lengths']
+        zhlabels = data['zh_labels_list'] #used for evaluating
+        
+        evaluate(use_cuda, net, entext, zhgtruths, zhlabels, enlen, transformer)
 
 
 

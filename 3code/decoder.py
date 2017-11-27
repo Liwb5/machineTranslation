@@ -57,7 +57,9 @@ class Decoder(nn.Module):
         else:
             logits = Variable(torch.zeros(self.zh_maxLength, self.batch_size, self.zh_voc))
             predicts = Variable(torch.zeros(self.zh_maxLength, self.batch_size)).long()
-        
+
+        logits = [0 for i in range(self.zh_maxLength)]
+        predicts = [0 for i in range(self.zh_maxLength)]
         
         for i in range(self.zh_maxLength):
             
@@ -65,7 +67,7 @@ class Decoder(nn.Module):
                 if i == 0:
                     inputs_x = sent_inputs[0]
                 else:
-                    inputs_x = self.zh_embedding(predicts[i-1])
+                    inputs_x = self.zh_embedding(predicts[i-1].transpose(0,1))
             else:
                 inputs_x = sent_inputs[i]
 
@@ -75,6 +77,12 @@ class Decoder(nn.Module):
 
             _, predicts[i] = torch.max(logits[i], 1)
             
+            logits[i] = logits[i].view(1, logits[i].size(0), logits[i].size(1))
+            predicts[i] = predicts[i].view(1, predicts[i].size(0))
+            
+        predicts = torch.cat(predicts, 0)
+        predicts = torch.transpose(predicts, 0, 1)
+            
         if is_eval:     
             #print(predicts)
             pass
@@ -83,7 +91,7 @@ class Decoder(nn.Module):
         #logits --> zh_maxLen * B * zh_voc so change it to B* L * zh_voc
         #predicts --> zh_maxLen * B   so change it to B * L
         #predicts 转成data是为了在预测的时候可以使用
-        return logits.transpose(0, 1), predicts.transpose(0, 1).data.cpu()
+        return torch.cat(logits).transpose(0, 1), predicts.data.cpu()
 
 
 
