@@ -55,19 +55,10 @@ class Decoder(nn.Module):
             logits = Variable(torch.zeros(sent_inputs.size(0), self.batch_size, self.zh_voc)).cuda()
             predicts = Variable(torch.zeros(sent_inputs.size(0), self.batch_size)).long().cuda()
         else:
-<<<<<<< HEAD
             logits = Variable(torch.zeros(sent_inputs.size(0), self.batch_size, self.zh_voc))
             predicts = Variable(torch.zeros(sent_inputs.size(0), self.batch_size)).long()
 
-        logits = [0 for i in range(sent_inputs.size(0)-1)]
-        predicts = [0 for i in range(sent_inputs.size(0)-1)]
-=======
-            logits = Variable(torch.zeros(self.zh_maxLength, self.batch_size, self.zh_voc))
-            predicts = Variable(torch.zeros(self.zh_maxLength, self.batch_size)).long()
-        
->>>>>>> dev
-        
-        for i in range(sent_inputs.size(0)-1):
+        for i in range(sent_inputs.size(0)):
             
             if is_eval:
                 if i == 0:

@@ -47,15 +47,6 @@ if __name__ == '__main__':
     
     weight = [1 for i in range(outputlang.n_words)]
     weight[2] = 0
-    
-    
-    #loading data
-    print('loading data ...............')
-    h5py_file = h5py.File('../data/train_afterProcess.h5py','r')
-    pairs = h5py_file['pairs']
-    print(pairs[0][0].decode('utf-8'))
-    print(pairs[0][1].decode('gb2312'))
-
             
     net = seq2seq.Net(use_cuda = use_cuda,
                  en_voc = inputlang.n_words,
