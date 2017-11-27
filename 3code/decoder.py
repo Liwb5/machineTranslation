@@ -52,16 +52,16 @@ class Decoder(nn.Module):
             hx = self.en2zh_size(hx)
 
         if self.use_cuda:
-            logits = Variable(torch.zeros(self.zh_maxLength, self.batch_size, self.zh_voc)).cuda()
-            predicts = Variable(torch.zeros(self.zh_maxLength, self.batch_size)).long().cuda()
+            logits = Variable(torch.zeros(sent_inputs.size(0), self.batch_size, self.zh_voc)).cuda()
+            predicts = Variable(torch.zeros(sent_inputs.size(0), self.batch_size)).long().cuda()
         else:
-            logits = Variable(torch.zeros(self.zh_maxLength, self.batch_size, self.zh_voc))
-            predicts = Variable(torch.zeros(self.zh_maxLength, self.batch_size)).long()
+            logits = Variable(torch.zeros(sent_inputs.size(0), self.batch_size, self.zh_voc))
+            predicts = Variable(torch.zeros(sent_inputs.size(0), self.batch_size)).long()
 
-        logits = [0 for i in range(self.zh_maxLength)]
-        predicts = [0 for i in range(self.zh_maxLength)]
+        logits = [0 for i in range(sent_inputs.size(0)-1)]
+        predicts = [0 for i in range(sent_inputs.size(0)-1)]
         
-        for i in range(self.zh_maxLength):
+        for i in range(sent_inputs.size(0)-1):
             
             if is_eval:
                 if i == 0:

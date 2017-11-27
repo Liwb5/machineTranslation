@@ -52,7 +52,8 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every,
             zhlabels = data['zh_labels_list'] #used for evaluating
             #print(type(enlen))
             entext = entext[:,0:enlen[0]]
-            
+            zhgtruths = zhgtruths[:,0:zhlen[0]]
+            zhlabels = zhlabels[:,0:zhlen[0]-1]
             #print(enlen)
             #print(entext)
             logits, predicts = net(entext, zhgtruths, enlen)
@@ -114,6 +115,8 @@ def evaluateFromDataset(use_cuda, net, data_loader, transformer):
         zhlen = data['zh_lengths']
         zhlabels = data['zh_labels_list'] #used for evaluating
         entext = entext[:,0:enlen[0]]
+        zhgtruths = zhgtruths[:,0:zhlen[0]]
+        zhlabels = zhlabels[:,0:zhlen[0]-1]
         evaluate(use_cuda, net, entext, zhgtruths, zhlabels, enlen, transformer)
 
 
