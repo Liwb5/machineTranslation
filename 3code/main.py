@@ -16,7 +16,7 @@ import seq2seq
 use_cuda = torch.cuda.is_available()
 
 
-batch_size = 4
+batch_size = 1
 en_dims = 256
 zh_dims = 256
 en_hidden_size = 256
@@ -73,7 +73,7 @@ if __name__ == '__main__':
                  train_loader=train_loader, print_every = 20,batch_size = batch_size,
                 transformer = tf)
     
-    
+    train.evaluateFromDataset(use_cuda, net, train_loader, tf)
     
     
     
