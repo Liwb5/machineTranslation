@@ -51,7 +51,7 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every,
             zhlen = data['zh_lengths']
             zhlabels = data['zh_labels_list'] #used for evaluating
 
-            logits, predicts = net(entext, zhgtruths, enlen)
+            logits, predicts = net(entext, zhgtruths, enlen,teacher_forcing_ratio=0.5)
 
             
             loss = net.get_loss(logits, zhlabels)

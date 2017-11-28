@@ -28,7 +28,7 @@ dropout_p = 0.1
 
 if __name__ == '__main__':
     #train_folder = Folder('../data/train.h5',is_test=False)
-    train_folder = Folder('../data/train.h5',is_test=True, is_eval = False)
+    train_folder = Folder('../data/train3.h5',is_test=True, is_eval = False)
     train_loader = DataLoader(train_folder,
                          batch_size=batch_size,
                          num_workers=1,
@@ -37,8 +37,8 @@ if __name__ == '__main__':
     
     inputlang = dp.Lang('en')
     outputlang = dp.Lang('zh')
-    inputlang.load('../data/en_input_dict.pkl')
-    outputlang.load('../data/zh_output_dict.pkl')
+    inputlang.load('../data/en_dict3.pkl')
+    outputlang.load('../data/zh_dict3.pkl')
 
     tf = transformer.Transformer(inputlang, outputlang)
     

@@ -67,7 +67,7 @@ class Net(nn.Module):
         return inputs, inputs_len, true_order_ids
     
 
-    def forward(self, inputs, gtruths, inputs_len, is_eval=False):
+    def forward(self, inputs, gtruths, inputs_len,teacher_forcing_ratio = 1, is_eval=False):
         """
         inputs: B*en_maxLen*en_dims 的list
         gtruths： B*zh_maxLen*zh_dims 的list
@@ -96,7 +96,8 @@ class Net(nn.Module):
 
         #logits --> B * L* zh_voc
         #predicts --> B * L   it is not tensor
-        logits, predicts = self.decoder(gtruths, encoder_outputs, inputs_len, is_eval=is_eval)
+        logits, predicts = self.decoder(gtruths, encoder_outputs, inputs_len,
+                    teacher_forcing_ratio= teacher_forcing_ratio, is_eval=is_eval)
 
         #logits -->B  * zh_maxLen * zh_voc
         #predicts --> B * zh_maxLen
