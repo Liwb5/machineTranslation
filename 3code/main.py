@@ -24,7 +24,7 @@ zh_hidden_size = 256
 zh_maxLength = 80
 lr = 0.01
 Epoches = 30
-
+dropout_p = 0.1
 
 if __name__ == '__main__':
     #train_folder = Folder('../data/train.h5',is_test=False)
@@ -55,7 +55,7 @@ if __name__ == '__main__':
                  zh_dims = zh_dims,
                  en_hidden_size = en_hidden_size,
                  zh_hidden_size = zh_hidden_size,
-                 dropout_p = 0,
+                 dropout_p = dropout_p,
                  weight = weight,
                  zh_maxLength = zh_maxLength,
                  batch_size = batch_size)
