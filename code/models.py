@@ -14,7 +14,7 @@ from torch import optim
 import torch.nn.functional as F
 
 import nltk
-os.environ["CUDA_VISIBLE_DEVICES"] = ''
+os.environ["CUDA_VISIBLE_DEVICES"] = '1'
 #--------some hyperparameters-------------------#
 use_cuda = torch.cuda.is_available()
 

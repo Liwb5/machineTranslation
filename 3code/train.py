@@ -13,6 +13,8 @@ import time
 import math
 
 
+
+
 def asMinutes(s):
     m = math.floor(s / 60)
     s -= m * 60
@@ -29,7 +31,15 @@ def timeSince(since, percent):
 
 
 def train(use_cuda, lr, net, epoches, train_loader, print_every, 
-            batch_size, transformer):
+            batch_size, transformer, agent):
+    
+    #to display
+    hyperparameters = {'learning rate':lr,
+                'batch_size':batch_size
+                  }
+    lossRecord = agent.register(hyperparameters,'loss')
+    
+    
     if use_cuda:
         net.cuda()
 
@@ -68,10 +78,11 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every,
 
             if (batch_count*batch_size) % print_every == 0:
                 print_avg_loss = print_loss/print_every
+                agent.append(lossRecord, batch_count, print_avg_loss)
                 print_loss = 0
                 print('epoch %d the loss is %.4f' % (epoch, print_avg_loss))
 
-                evaluate(use_cuda, net, entext, zhgtruths, zhlabels, enlen, transformer)
+                #evaluate(use_cuda, net, entext, zhgtruths, zhlabels, enlen, transformer)
 
 
 def evaluate(use_cuda, net, entext, gtruths, zhlabels, enlen, transformer):

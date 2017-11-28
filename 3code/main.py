@@ -1,6 +1,7 @@
 
 import torch
 import h5py
+import os
 
 from Folder import Folder
 from torch.utils.data import DataLoader
@@ -11,7 +12,10 @@ from decoder import Decoder
 from encoder import Encoder
 from decoder import Decoder
 import seq2seq
+from hyperboard import Agent
 
+
+os.environ["CUDA_VISIBLE_DEVICES"] = '1'
 
 use_cuda = torch.cuda.is_available()
 
@@ -25,6 +29,7 @@ zh_maxLength = 80
 lr = 0.01
 Epoches = 30
 dropout_p = 0.1
+
 
 if __name__ == '__main__':
     #train_folder = Folder('../data/train.h5',is_test=False)
@@ -41,6 +46,10 @@ if __name__ == '__main__':
     outputlang.load('../data/zh_dict3.pkl')
 
     tf = transformer.Transformer(inputlang, outputlang)
+    
+    agent = Agent(address='127.0.0.1',port=5100)
+    
+    
     
     print(inputlang.name,inputlang.n_words)
     print(outputlang.name,outputlang.n_words)
@@ -62,7 +71,7 @@ if __name__ == '__main__':
 
     train.train(use_cuda=use_cuda, lr = lr, net=net, epoches = Epoches, 
                  train_loader=train_loader, print_every = 20,batch_size = batch_size,
-                transformer = tf)
+                transformer = tf, agent = agent)
     
     train.evaluateFromDataset(use_cuda, net, train_loader, tf)
     
