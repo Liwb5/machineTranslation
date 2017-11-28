@@ -29,7 +29,8 @@ zh_maxLength = 80
 lr = 0.01
 Epoches = 30
 dropout_p = 0.1
-
+save_model_every = 480
+print_every = 20
 
 if __name__ == '__main__':
     #train_folder = Folder('../data/train.h5',is_test=False)
@@ -68,10 +69,21 @@ if __name__ == '__main__':
                  weight = weight,
                  zh_maxLength = zh_maxLength,
                  batch_size = batch_size)
+    
+    pre_trained = torch.load('../models/test.model')
+    net.load_state_dict(pre_trained)
+    print(net)
 
-    train.train(use_cuda=use_cuda, lr = lr, net=net, epoches = Epoches, 
-                 train_loader=train_loader, print_every = 20,batch_size = batch_size,
-                transformer = tf, agent = agent)
+    train.train(use_cuda=use_cuda, 
+            lr = lr, 
+            net=net,
+            epoches = Epoches, 
+            train_loader=train_loader, 
+            print_every = print_every, 
+            save_model_every = save_model_every, 
+            batch_size = batch_size,
+            transformer = tf, 
+            agent = agent)
     
     train.evaluateFromDataset(use_cuda, net, train_loader, tf)
     

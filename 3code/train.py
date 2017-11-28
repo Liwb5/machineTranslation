@@ -30,7 +30,7 @@ def timeSince(since, percent):
 
 
 
-def train(use_cuda, lr, net, epoches, train_loader, print_every, 
+def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_every,
             batch_size, transformer, agent):
     
     #to display
@@ -50,6 +50,7 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every,
 
     batch_count = 0
     print_loss = 0
+    tf_ratio = 0.5
 
     for epoch in range(epoches):
         for data in train_loader:
@@ -61,7 +62,7 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every,
             zhlen = data['zh_lengths']
             zhlabels = data['zh_labels_list'] #used for evaluating
 
-            logits, predicts = net(entext, zhgtruths, enlen,teacher_forcing_ratio=0.5)
+            logits, predicts = net(entext, zhgtruths, enlen,teacher_forcing_ratio=tf_ratio)
 
             
             loss = net.get_loss(logits, zhlabels)
@@ -75,15 +76,24 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every,
             optimizer.step()            
             
             del logits, predicts
+            
+            
+
 
             if (batch_count*batch_size) % print_every == 0:
                 print_avg_loss = print_loss/print_every
                 agent.append(lossRecord, batch_count, print_avg_loss)
                 print_loss = 0
-                print('epoch %d the loss is %.4f' % (epoch, print_avg_loss))
+                print('epoch %d/%d the loss is %.4f' % (epoch, epoches, print_avg_loss))
 
                 #evaluate(use_cuda, net, entext, zhgtruths, zhlabels, enlen, transformer)
-
+                if (batch_count*batch_size) % save_model_every == 0:
+                    global_step = batch_count*batch_size
+                    print('saving model ...')
+                    torch.save(net.state_dict(), '../models/lr{:5f}_BS{:d}_\
+                           tForce{:3f}_loss{:3f}_BLEU{:3f}_steps{:d}.model'\
+                           .format(lr, batch_size, tf_ratio, print_avg_loss, 
+                                   1.0, global_step))
 
 def evaluate(use_cuda, net, entext, gtruths, zhlabels, enlen, transformer):
     if use_cuda:
