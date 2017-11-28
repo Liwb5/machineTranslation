@@ -16,7 +16,7 @@ import seq2seq
 use_cuda = torch.cuda.is_available()
 
 
-batch_size = 1
+batch_size = 2
 en_dims = 256
 zh_dims = 256
 en_hidden_size = 256

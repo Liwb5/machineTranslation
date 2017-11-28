@@ -48,8 +48,25 @@ class Net(nn.Module):
                                 batch_size = batch_size,
                                 zh_maxLength = zh_maxLength,
                                 en_hidden_size = en_hidden_size)
+    def order(self, inputs, inputs_len):
+        """
+        inputs: B*en_maxLen. a Variable object
+        inputs_len: the real length of every sentence
+        """
+        inputs_len, sort_ids = torch.sort(inputs_len, 0, descending=True)
+        
+        sort_ids = Variable(sort_ids).cuda() if self.use_cuda else Variable(sort_ids)
+        inputs = inputs.index_select(0, sort_ids)
+        
+        _, true_order_ids = torch.sort(sort_ids, 0, descending=False)
+        
+        #true_order_ids = Variable(true_order_ids).cuda() if self.use_cuda else Variable(true_order_ids)
+        #排序之后，inputs按照句子长度从大到小排列
+        #true_order_ids是原来batch的顺序，因为后面需要将顺序调回来
+        return inputs, inputs_len, true_order_ids
+    
 
-    def forward(self, inputs, gtruths, inputs_len=None, is_eval=False):
+    def forward(self, inputs, gtruths, inputs_len, is_eval=False):
         """
         inputs: B*en_maxLen*en_dims 的list
         gtruths： B*zh_maxLen*zh_dims 的list
@@ -62,17 +79,23 @@ class Net(nn.Module):
         else:
             inputs = Variable(inputs).long()
             gtruths = Variable(gtruths).long()
+            
+        # order the inputs
+        inputs, sorted_len, true_order_ids = self.order(inputs, inputs_len)
 
         #B * maxLen * hidden_size
         inputs = self.en_embedding(inputs)
         
 
         # encoder_outputs --> B * maxLen * en_hidden_size
-        encoder_outputs = self.encoder(inputs)
+        encoder_outputs = self.encoder(inputs, sorted_len)
+        
+        #换回原先的顺序
+        encoder_outputs = encoder_outputs.index_select(0, true_order_ids)
 
         #logits --> B * L* zh_voc
         #predicts --> B * L   it is not tensor
-        logits, predicts = self.decoder(gtruths, encoder_outputs, is_eval=is_eval)
+        logits, predicts = self.decoder(gtruths, encoder_outputs, inputs_len, is_eval=is_eval)
 
         #logits -->B  * zh_maxLen * zh_voc
         #predicts --> B * zh_maxLen

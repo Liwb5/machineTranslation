@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-
+import torch.nn.utils.rnn as rnn_utils
 
 class Encoder(nn.Module):
     def __init__(self, use_cuda, en_dims, en_hidden_size, 
@@ -26,22 +26,27 @@ class Encoder(nn.Module):
                             dropout = dropout_p,
                             bidirectional = bidirectional)#双向lstm
 
-    def forward(self, sent_inputs, sent_len = None):
+    def forward(self, sent_inputs, sent_len):
         """
         sent_inputs: B*en_maxLen*en_dims句子长度乘以词向量的长度的variable
         sent_len: batch中每个句子的长度
         """
-        #packed = rnn_utils.pack_padded_sequence(input = sent_inputs,  
-        #                               lengths = list(sent_len))
+        ###should be ordered before pack padded
+        
         
         #change sent_inputs size to en_maxLen*B*en_dims
         sent_inputs = torch.transpose(sent_inputs, 0, 1)
+        packed = rnn_utils.pack_padded_sequence(input = sent_inputs,  
+                                       lengths = list(sent_len))
 
-        #result: en_maxLen* B * en_hidden_size 
-        result, _ = self.lstm(sent_inputs)
+        #packed_out: en_maxLen* B * en_hidden_size 
+        packed_out, _ = self.lstm(packed)
 
+        unpacked, _ = rnn_utils.pad_packed_sequence(packed_out)
         
-        return result.transpose(0, 1)
+        #print('unpacked size:', unpacked.size())
+        #在返回之前，先将返回值变回B*en_maxLen_en_hidden_size
+        return unpacked.transpose(0, 1)
 
 
 

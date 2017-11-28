@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
+import torch.nn.utils.rnn as rnn_utils
 
 class Decoder(nn.Module):
     def __init__(self, use_cuda, zh_voc, zh_dims, zh_hidden_size, 
@@ -27,11 +28,21 @@ class Decoder(nn.Module):
 
         self.hx2zh_voc = nn.Linear(in_features = zh_hidden_size,
                                     out_features = zh_voc)
+        
+    def last_timestep(self, unpacked, sent_len):
+        """
+        unpacked: B * maxSentenceLen * en_hidden_size
+        sent_len: B*1  the real length of every sentence
+        """
+        #Index of the last output for each sequence
+        idx = (sent_len - 1).view(-1, 1).expand(unpacked.size(0), unpacked.size(2)).unsqueeze(1)
+        
+        return unpacked.gather(1, idx).squeeze()
 
-    def forward(self, sent_inputs, hidden_state, sent_len = None, is_eval = False):
+    def forward(self, sent_inputs, hidden_state, sent_len, is_eval = False):
         """
         sent_inputs: B * zh_maxLen * zh_dims的中文句子的variable
-        hidden_state: B * en_maxLen * en_hidden_size 
+        hidden_state: B * maxSentenceLen * en_hidden_size 
         sent_len: B * 1  记录每个中文句子的长度
         """
         sent_inputs = self.zh_embedding(sent_inputs)
@@ -42,10 +53,13 @@ class Decoder(nn.Module):
             cx = Variable(torch.zeros(self.batch_size, self.zh_hidden_size))
 
 
-        hidden_state = torch.transpose(hidden_state, 0, 1)
+        hidden_state = torch.transpose(hidden_state, 0, 1).contiguous()
         sent_inputs = torch.transpose(sent_inputs, 0, 1)
+        
         # hx size is B*en_hidden_size
         hx = hidden_state[-1].view(hidden_state.size(1), hidden_state.size(2))
+        
+        
 
         #change the hx size to B * zh_hidden_size
         if hidden_state.size(2) != self.zh_hidden_size:  
