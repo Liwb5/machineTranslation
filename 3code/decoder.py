@@ -36,13 +36,13 @@ class Decoder(nn.Module):
         """
         #Index of the last output for each sequence
         idx = (sent_len - 1).view(-1, 1).expand(unpacked.size(0), unpacked.size(2)).unsqueeze(1)
-        
+        idx = Variable(idx).long().cuda() if self.use_cuda else Variable(idx).long()
         return unpacked.gather(1, idx).squeeze()
 
     def forward(self, sent_inputs, hidden_state, sent_len, is_eval = False):
         """
         sent_inputs: B * zh_maxLen * zh_dims的中文句子的variable
-        hidden_state: B * maxSentenceLen * en_hidden_size 
+        hidden_state: B * maxSentenceLen * en_hidden_size variable 
         sent_len: B * 1  记录每个中文句子的长度
         """
         sent_inputs = self.zh_embedding(sent_inputs)
@@ -53,13 +53,13 @@ class Decoder(nn.Module):
             cx = Variable(torch.zeros(self.batch_size, self.zh_hidden_size))
 
 
-        hidden_state = torch.transpose(hidden_state, 0, 1).contiguous()
+        #hidden_state = torch.transpose(hidden_state, 0, 1).contiguous()
         sent_inputs = torch.transpose(sent_inputs, 0, 1)
         
         # hx size is B*en_hidden_size
-        hx = hidden_state[-1].view(hidden_state.size(1), hidden_state.size(2))
+        #hx = hidden_state[-1].view(hidden_state.size(1), hidden_state.size(2))
         
-        
+        hx = self.last_timestep(hidden_state.contiguous(), sent_len)
 
         #change the hx size to B * zh_hidden_size
         if hidden_state.size(2) != self.zh_hidden_size:  
