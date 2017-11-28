@@ -61,6 +61,7 @@ class Net(nn.Module):
         _, true_order_ids = torch.sort(sort_ids, 0, descending=False)
         
         #true_order_ids = Variable(true_order_ids).cuda() if self.use_cuda else Variable(true_order_ids)
+        
         #排序之后，inputs按照句子长度从大到小排列
         #true_order_ids是原来batch的顺序，因为后面需要将顺序调回来
         return inputs, inputs_len, true_order_ids

@@ -29,7 +29,7 @@ class Encoder(nn.Module):
     def forward(self, sent_inputs, sent_len):
         """
         sent_inputs: B*en_maxLen*en_dims句子长度乘以词向量的长度的variable
-        sent_len: batch中每个句子的长度
+        sent_len: B * 1. batch中每个句子的长度
         """
         ###should be ordered before pack padded
         
