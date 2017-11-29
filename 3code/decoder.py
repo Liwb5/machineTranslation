@@ -63,15 +63,18 @@ class Decoder(nn.Module):
         #hx = hidden_state[-1].view(hidden_state.size(1), hidden_state.size(2))
         
         hx = self.last_timestep(hidden_state.contiguous(), sent_len)
-
+        """
         if self.use_cuda:
             logits = Variable(torch.zeros(sent_inputs.size(0), self.batch_size, self.zh_voc)).cuda()
             predicts = Variable(torch.zeros(sent_inputs.size(0), self.batch_size)).long().cuda()
         else:
             logits = Variable(torch.zeros(sent_inputs.size(0), self.batch_size, self.zh_voc))
             predicts = Variable(torch.zeros(sent_inputs.size(0), self.batch_size)).long()
-  
-        
+        """
+        #我们要用这两个变量去存储输出的数据(是variable类型),所以这两个变量不应该是variable，
+        #它们就是一个容器，容纳输出的variable变量。
+        logits = [0 for i in range(sent_inputs.size(0))]
+        predicts = [0 for i in range(sent_inputs.size(0))]
         for i in range(sent_inputs.size(0)):
             
             if is_eval:
@@ -86,7 +89,7 @@ class Decoder(nn.Module):
                     use_teacher_forcing = True 
                 else:
                     use_teacher_forcing = False
-                use_teacher_forcing = True
+                #use_teacher_forcing = True
                 if use_teacher_forcing or i == 0:
                     inputs_x = sent_inputs[i]
                     #print('i==%d used:'% i,inputs_x.size())
@@ -94,17 +97,23 @@ class Decoder(nn.Module):
                     inputs_x = self.zh_embedding(predicts[i-1])
                     #print('i=%d unused:'% i,inputs_x.size())
 
+                    
             hx, cx = self.lstm_cell(inputs_x,(hx, cx))
 
             logits[i] = self.hx2zh_voc(hx)
 
             _, predicts[i] = torch.max(logits[i], 1)
             
+            logits[i] = logits[i].view(1, logits[i].size(0), logits[i].size(1))
+            predicts[i] = predicts[i].view(1, predicts[i].size(0))
 
+            
+        logits = torch.cat(logits)
+        predicts = torch.cat(predicts, 0)
         #logits --> zh_maxLen * B * zh_voc so change it to B* L * zh_voc
         #predicts --> zh_maxLen * B   so change it to B * L
         #predicts 转成data是为了在预测的时候可以使用
-        return logits.contiguous().transpose(0, 1), predicts.contiguous().transpose(0, 1).data.cpu()
+        return logits.transpose(0, 1), predicts.contiguous().transpose(0, 1).data.cpu()
 
 
 

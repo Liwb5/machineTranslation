@@ -12,19 +12,19 @@ from torch.utils import data
 
 class Folder(data.Dataset):
     
-    def __init__(self, filepath, is_eval, is_test):
+    def __init__(self, filepath, is_eval, is_test, num=2000):
         
         self.file = h5py.File(filepath, 'r')
         self.is_test = is_test
         self.is_eval = is_eval
+        self.num = num
         
         if self.is_test == True:
-            num = 20
-            self.en_index_list = self.file['en_index_list'][0:num]
-            self.en_lengths = self.file['en_lengths'][0:num]
-            self.zh_index_list = self.file['zh_index_list'][0:num]
-            self.zh_lengths = self.file['zh_lengths'][0:num]
-            self.zh_labels_list = self.file['zh_labels_list'][0:num]     
+            self.en_index_list = self.file['en_index_list'][0:self.num]
+            self.en_lengths = self.file['en_lengths'][0:self.num]
+            self.zh_index_list = self.file['zh_index_list'][0:self.num]
+            self.zh_lengths = self.file['zh_lengths'][0:self.num]
+            self.zh_labels_list = self.file['zh_labels_list'][0:self.num]     
             
             self.nb_samples = len(self.en_index_list)
         

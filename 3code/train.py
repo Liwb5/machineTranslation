@@ -77,8 +77,6 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
             
             del logits, predicts
             
-            
-
 
             if (batch_count*batch_size) % print_every == 0:
                 print_avg_loss = print_loss/print_every
@@ -90,8 +88,7 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
                 if (batch_count*batch_size) % save_model_every == 0:
                     global_step = batch_count*batch_size
                     print('saving model ...')
-                    torch.save(net.state_dict(), '../models/lr{:5f}_BS{:d}_\
-                           tForce{:3f}_loss{:3f}_BLEU{:3f}_steps{:d}.model'\
+                    torch.save(net.state_dict(), '../models/lr{:.3f}_BS{:d}_tForce{:.3f}_loss{:.3f}_BLEU{:.3f}_steps{:d}.model'\
                            .format(lr, batch_size, tf_ratio, print_avg_loss, 
                                    1.0, global_step))
 
@@ -121,7 +118,7 @@ def evaluate(use_cuda, net, entext, gtruths, zhlabels, enlen, transformer):
     net.train()
 
 
-def evaluateFromDataset(use_cuda, net, data_loader, transformer):
+def evaluateFromDataset(use_cuda, net, data_loader, transformer, count):
     
     for data in data_loader:
         
@@ -132,6 +129,10 @@ def evaluateFromDataset(use_cuda, net, data_loader, transformer):
         zhlabels = data['zh_labels_list'] #used for evaluating
 
         evaluate(use_cuda, net, entext, zhgtruths, zhlabels, enlen, transformer)
+        
+        count -= 1
+        if count == 0:
+            break
 
 
 

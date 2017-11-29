@@ -15,26 +15,29 @@ import seq2seq
 from hyperboard import Agent
 
 
-os.environ["CUDA_VISIBLE_DEVICES"] = '1'
+os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
 use_cuda = torch.cuda.is_available()
 
+sentence_num = 2000
 
-batch_size = 2
+batch_size = 200
 en_dims = 256
 zh_dims = 256
 en_hidden_size = 256
 zh_hidden_size = 256
 zh_maxLength = 80
 lr = 0.01
-Epoches = 30
+Epoches = 100
 dropout_p = 0.1
-save_model_every = 480
-print_every = 20
+save_model_every = 10000
+print_every = 400
+is_test = True   #True表示使用一点数据用于测试，False表示使用所有数据进行训练
+
 
 if __name__ == '__main__':
     #train_folder = Folder('../data/train.h5',is_test=False)
-    train_folder = Folder('../data/train3.h5',is_test=True, is_eval = False)
+    train_folder = Folder('../data/train3.h5',is_test=is_test, is_eval = False, num = sentence_num)
     train_loader = DataLoader(train_folder,
                          batch_size=batch_size,
                          num_workers=1,
@@ -70,8 +73,8 @@ if __name__ == '__main__':
                  zh_maxLength = zh_maxLength,
                  batch_size = batch_size)
     
-    pre_trained = torch.load('../models/test.model')
-    net.load_state_dict(pre_trained)
+    #pre_trained = torch.load('../models/test.model')
+    #net.load_state_dict(pre_trained)
     print(net)
 
     train.train(use_cuda=use_cuda, 
@@ -85,7 +88,7 @@ if __name__ == '__main__':
             transformer = tf, 
             agent = agent)
     
-    train.evaluateFromDataset(use_cuda, net, train_loader, tf)
+    train.evaluateFromDataset(use_cuda, net, train_loader, tf, count = 10)
     
     
     
