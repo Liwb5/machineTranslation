@@ -19,25 +19,25 @@ os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
 use_cuda = torch.cuda.is_available()
 
-sentence_num = 2000
+sentence_num = 200  #设置数字表示使用一点数据用于测试，设置None表示使用所有数据进行训练
 
-batch_size = 200
-en_dims = 256
-zh_dims = 256
-en_hidden_size = 256
-zh_hidden_size = 256
+batch_size = 100
+en_dims = 512
+zh_dims = 512
+en_hidden_size = 512
+zh_hidden_size = 512
 zh_maxLength = 80
 lr = 0.01
-Epoches = 100
+Epoches = 50
 dropout_p = 0.1
-save_model_every = 10000
-print_every = 400
-is_test = True   #True表示使用一点数据用于测试，False表示使用所有数据进行训练
+print_every = 10 #每多少个batch就print一次
+save_model_every = print_every*10000000
 
+ 
 
 if __name__ == '__main__':
     #train_folder = Folder('../data/train.h5',is_test=False)
-    train_folder = Folder('../data/train3.h5',is_test=is_test, is_eval = False, num = sentence_num)
+    train_folder = Folder('../data/train3.h5',is_eval = False, num = sentence_num)
     train_loader = DataLoader(train_folder,
                          batch_size=batch_size,
                          num_workers=1,
@@ -88,7 +88,7 @@ if __name__ == '__main__':
             transformer = tf, 
             agent = agent)
     
-    train.evaluateFromDataset(use_cuda, net, train_loader, tf, count = 10)
+    train.printPredictsFromDataset(use_cuda, net, train_loader, tf, count = 10)
     
     
     

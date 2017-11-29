@@ -12,7 +12,7 @@ import torch.nn.utils.rnn as rnn_utils
 import time
 import math
 
-
+import score
 
 
 def asMinutes(s):
@@ -38,7 +38,7 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
                 'batch_size':batch_size
                   }
     lossRecord = agent.register(hyperparameters,'loss')
-    
+    scoreRecord = agent.register(hyperparameters,'BLEUscore')
     
     if use_cuda:
         net.cuda()
@@ -48,11 +48,12 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
 
     net.train()
 
-    batch_count = 0
+    global_step = 0
     print_loss = 0
     tf_ratio = 0.5
 
     for epoch in range(epoches):
+        batch_count = 0
         for data in train_loader:
             batch_count += 1
 
@@ -77,21 +78,27 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
             
             del logits, predicts
             
-
-            if (batch_count*batch_size) % print_every == 0:
+            global_step += 1
+            if global_step % print_every == 0:
                 print_avg_loss = print_loss/print_every
-                agent.append(lossRecord, batch_count, print_avg_loss)
+                agent.append(lossRecord, global_step, print_avg_loss)
                 print_loss = 0
-                print('epoch %d/%d the loss is %.4f' % (epoch, epoches, print_avg_loss))
 
-                #evaluate(use_cuda, net, entext, zhgtruths, zhlabels, enlen, transformer)
-                if (batch_count*batch_size) % save_model_every == 0:
+                #calculate BLEU score
+                _, zh_answer, zh_predicts = evaluate(use_cuda, net, entext, zhgtruths, zhlabels, enlen, transformer)
+                bleu_score = score.BLEUscore(zh_predicts, zh_answer)
+                agent.append(scoreRecord, global_step, bleu_score)
+                
+                print('epoch %d/%d | loss %.4f | score %.4f' % (epoch, epoches, print_avg_loss, bleu_score))
+                
+                if global_step % save_model_every == 0:
                     global_step = batch_count*batch_size
                     print('saving model ...')
-                    torch.save(net.state_dict(), '../models/lr{:.3f}_BS{:d}_tForce{:.3f}_loss{:.3f}_BLEU{:.3f}_steps{:d}.model'\
+                    torch.save(net.state_dict(), '../models/lr{:.3f}_BS{:d}_tForce{:.3f}_BLEU{:.3f}_steps{:d}.model'\
                            .format(lr, batch_size, tf_ratio, print_avg_loss, 
-                                   1.0, global_step))
+                                   bleu_score, batch))
 
+                    
 def evaluate(use_cuda, net, entext, gtruths, zhlabels, enlen, transformer):
     if use_cuda:
         net.cuda()
@@ -110,15 +117,17 @@ def evaluate(use_cuda, net, entext, gtruths, zhlabels, enlen, transformer):
         zh_predicts[i] = transformer.index2text(predicts[i],'zh')
         #zh_gtruths[i] = transformer.index2text(gtruths[i],'zh')
 
-        print('<', en_origin[i])
-        print('=', zh_answer[i])
+        #print('<', en_origin[i])
+        #print('=', zh_answer[i])
         #print('=', zh_gtruths[i])
-        print('>',zh_predicts[i])
+        #print('>',zh_predicts[i])
         
     net.train()
+    
+    return en_origin, zh_answer, zh_predicts
 
 
-def evaluateFromDataset(use_cuda, net, data_loader, transformer, count):
+def printPredictsFromDataset(use_cuda, net, data_loader, transformer, count):
     
     for data in data_loader:
         
@@ -128,9 +137,16 @@ def evaluateFromDataset(use_cuda, net, data_loader, transformer, count):
         zhlen = data['zh_lengths']
         zhlabels = data['zh_labels_list'] #used for evaluating
 
-        evaluate(use_cuda, net, entext, zhgtruths, zhlabels, enlen, transformer)
+        en_origin, zh_answer, zh_predicts = evaluate(use_cuda, net, entext, 
+                                   zhgtruths, zhlabels, enlen, transformer)
         
-        count -= 1
+        for i in range(len(en_origin)):
+            print('<', en_origin[i])
+            print('=', zh_answer[i])
+            print('>',zh_predicts[i]) 
+            break  #只输出一个句子
+        
+        count -= 1   #总共显示count个句子
         if count == 0:
             break
 
