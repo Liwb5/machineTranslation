@@ -31,14 +31,13 @@ def timeSince(since, percent):
 
 
 def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_every,
-            batch_size, transformer, agent):
+            batch_size, transformer, agent, hyperparameters):
     
     #to display
-    hyperparameters = {'learning rate':lr,
-                'batch_size':batch_size
-                  }
-    lossRecord = agent.register(hyperparameters,'loss')
-    scoreRecord = agent.register(hyperparameters,'BLEUscore')
+    hyperparameters['ID'] = 'loss'
+    lossRecord = agent.register(hyperparameters,'loss',True)
+    hyperparameters['ID'] = 'BLEUscore'
+    scoreRecord = agent.register(hyperparameters,'BLEUscore', True)
     
     if use_cuda:
         net.cuda()
@@ -52,10 +51,9 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
     print_loss = 0
     tf_ratio = 0.5
 
-    for epoch in range(epoches):
+    for epoch in range(1,epoches+1):
         batch_count = 0
         for data in train_loader:
-            batch_count += 1
 
             entext = data['en_index_list']
             enlen = data['en_lengths']
@@ -78,7 +76,8 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
             
             del logits, predicts
             
-            global_step += 1
+            batch_count += 1  #新的epoch下就会置零
+            global_step += 1  #每个batch加1
             if global_step % print_every == 0:
                 print_avg_loss = print_loss/print_every
                 agent.append(lossRecord, global_step, print_avg_loss)
@@ -89,14 +88,13 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
                 bleu_score = score.BLEUscore(zh_predicts, zh_answer)
                 agent.append(scoreRecord, global_step, bleu_score)
                 
-                print('epoch %d/%d | loss %.4f | score %.4f' % (epoch, epoches, print_avg_loss, bleu_score))
+                print('epoch %d/%d | loss %.4f | score %.4f | batch %d' % (epoch, epoches, print_avg_loss, bleu_score, batch_count))
                 
                 if global_step % save_model_every == 0:
-                    global_step = batch_count*batch_size
                     print('saving model ...')
                     torch.save(net.state_dict(), '../models/lr{:.3f}_BS{:d}_tForce{:.3f}_BLEU{:.3f}_steps{:d}.model'\
                            .format(lr, batch_size, tf_ratio, print_avg_loss, 
-                                   bleu_score, batch))
+                                   bleu_score, global_step))
 
                     
 def evaluate(use_cuda, net, entext, gtruths, zhlabels, enlen, transformer):

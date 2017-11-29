@@ -33,7 +33,11 @@ dropout_p = 0.1
 print_every = 10 #每多少个batch就print一次
 save_model_every = print_every*10000000
 
- 
+hyperparameters = {'lr':lr,
+             'dropout_p':dropout_p,
+             'en_dims':en_dims,
+             'hidden_size':en_hidden_size,
+             'batch_size':batch_size}
 
 if __name__ == '__main__':
     #train_folder = Folder('../data/train.h5',is_test=False)
@@ -86,7 +90,8 @@ if __name__ == '__main__':
             save_model_every = save_model_every, 
             batch_size = batch_size,
             transformer = tf, 
-            agent = agent)
+            agent = agent,
+            hyperparameters = hyperparameters)
     
     train.printPredictsFromDataset(use_cuda, net, train_loader, tf, count = 10)
     
