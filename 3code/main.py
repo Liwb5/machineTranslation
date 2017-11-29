@@ -15,7 +15,7 @@ import seq2seq
 from hyperboard import Agent
 
 
-os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+os.environ["CUDA_VISIBLE_DEVICES"] = '1'
 
 use_cuda = torch.cuda.is_available()
 

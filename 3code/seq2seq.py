@@ -9,6 +9,7 @@ import random
 import torch.nn.utils.rnn as rnn_utils
 from encoder import Encoder
 from decoder import Decoder
+from attention import Attention
 
 
 class Net(nn.Module):
