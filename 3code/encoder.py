@@ -16,8 +16,8 @@ class Encoder(nn.Module):
         self.use_cuda = use_cuda
 
         if bidirectional:
-            en_hidden_size = en_hidden_size/2
-
+            en_hidden_size = int(en_hidden_size/2)
+        
         self.lstm = nn.LSTM(input_size = en_dims,  #输入词向量的维度
                             hidden_size = en_hidden_size,  # hx的维度
                             num_layers = 1,
