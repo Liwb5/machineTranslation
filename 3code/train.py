@@ -60,6 +60,9 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
             zhgtruths = data['zh_index_list'] #used for training
             zhlen = data['zh_lengths']
             zhlabels = data['zh_labels_list'] #used for evaluating
+            
+            #do some thing to teacher_forcing_ratio
+            
 
             logits, predicts = net(entext, zhgtruths, enlen,teacher_forcing_ratio=tf_ratio)
 
