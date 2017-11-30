@@ -63,12 +63,13 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
             zhlen = data['zh_lengths']
             zhlabels = data['zh_labels_list'] #used for evaluating
             
+            print(entext)
             #do some thing to teacher_forcing_ratio
             #平常测试的时候就可以不让ssprob随时间变化
             if tf_ratio != None:
                 ssprob = tf_ratio
             else:
-                ssprob = max(math.exp(-(global_steps)/200000-0.1), 0.5)
+                ssprob = max(math.exp(-(global_step)/200000-0.1), 0.5)
 
             logits, predicts = net(entext, zhgtruths, enlen, teacher_forcing_ratio=ssprob)
 
@@ -106,6 +107,20 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
                            .format(lr, batch_size, ssprob, print_avg_loss, 
                                    bleu_score, global_step))
 
+def evaluateValidData(use_cuda, net):
+    if use_cuda:
+        net.cuda()
+
+    net.eval()
+    
+    with open(path, 'rb') as f:
+        en_index_list, zh_labels_list, en_lengths, zh_lengths = pickle.load(f)
+        
+        for i in range(len(en_index_list)):
+            pass
+            
+        
+                
                     
 def evaluate(use_cuda, net, entext, gtruths, zhlabels, enlen, transformer):
     if use_cuda:

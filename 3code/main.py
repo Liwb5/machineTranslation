@@ -24,7 +24,7 @@ sentence_num = 200  #设置数字表示使用一点数据用于测试，设置No
 atten_mode = 'general'  #None 表示不使用attention，general表示使用general模式
 tf_ratio = None   #测试的时候是1，如果为None表示tf_ratio随着时间变小
 
-batch_size = 120
+batch_size = 12
 en_dims = 512
 zh_dims = 512
 en_hidden_size = 512
