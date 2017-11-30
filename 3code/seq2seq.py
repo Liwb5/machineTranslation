@@ -9,7 +9,7 @@ import random
 import torch.nn.utils.rnn as rnn_utils
 from encoder import Encoder
 from decoder import Decoder
-from attention import Attention
+
 
 
 class Net(nn.Module):
@@ -49,6 +49,8 @@ class Net(nn.Module):
                                 batch_size = batch_size,
                                 zh_maxLength = zh_maxLength,
                                 en_hidden_size = en_hidden_size)
+        
+        
     def order(self, inputs, inputs_len):
         """
         inputs: B*en_maxLen. a Variable object

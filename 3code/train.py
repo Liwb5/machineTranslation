@@ -64,7 +64,7 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
             #do some thing to teacher_forcing_ratio
             
 
-            logits, predicts = net(entext, zhgtruths, enlen,teacher_forcing_ratio=tf_ratio)
+            logits, predicts = net(entext, zhgtruths, enlen, teacher_forcing_ratio=tf_ratio)
 
             
             loss = net.get_loss(logits, zhlabels)

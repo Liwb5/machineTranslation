@@ -5,6 +5,8 @@ import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
 import torch.nn.utils.rnn as rnn_utils
+import attention
+
 
 class Decoder(nn.Module):
     def __init__(self, use_cuda, zh_voc, zh_dims, zh_hidden_size, 
@@ -31,6 +33,14 @@ class Decoder(nn.Module):
         self.hx2zh_voc = nn.Linear(in_features = zh_hidden_size,
                                     out_features = zh_voc)
         
+        self.atten = attention.Attention(use_cuda = use_cuda,
+                              mode = 'general',
+                              en_hidden_size = en_hidden_size,
+                              zh_hidden_size = zh_hidden_size)
+        
+        self.ht_ = nn.Linear(in_features = zh_hidden_size*2,
+                            out_features = zh_hidden_size)
+        
     def last_timestep(self, unpacked, sent_len):
         """
         unpacked: B * maxSentenceLen * en_hidden_size
@@ -44,7 +54,7 @@ class Decoder(nn.Module):
     def forward(self, sent_inputs, hidden_state, sent_len, teacher_forcing_ratio, is_eval = False):
         """
         sent_inputs: B * zh_maxLen * zh_dims的中文句子的variable
-        hidden_state: B * maxSentenceLen * en_hidden_size variable 
+        hidden_state: B * maxSentenceLen * en_hidden_size variable. the output of encoder
         sent_len: B * 1  记录每个中文句子的长度
         use_teacher_ratio: decode时使用上次预测的结果作为下次的input的概率
         """
@@ -63,14 +73,7 @@ class Decoder(nn.Module):
         #hx = hidden_state[-1].view(hidden_state.size(1), hidden_state.size(2))
         
         hx = self.last_timestep(hidden_state.contiguous(), sent_len)
-        """
-        if self.use_cuda:
-            logits = Variable(torch.zeros(sent_inputs.size(0), self.batch_size, self.zh_voc)).cuda()
-            predicts = Variable(torch.zeros(sent_inputs.size(0), self.batch_size)).long().cuda()
-        else:
-            logits = Variable(torch.zeros(sent_inputs.size(0), self.batch_size, self.zh_voc))
-            predicts = Variable(torch.zeros(sent_inputs.size(0), self.batch_size)).long()
-        """
+
         #我们要用这两个变量去存储输出的数据(是variable类型),所以这两个变量不应该是variable，
         #它们就是一个容器，容纳输出的variable变量。
         logits = [0 for i in range(sent_inputs.size(0))]
@@ -96,10 +99,27 @@ class Decoder(nn.Module):
                 else:
                     inputs_x = self.zh_embedding(predicts[i-1])
                     #print('i=%d unused:'% i,inputs_x.size())
-
+            
                     
             hx, cx = self.lstm_cell(inputs_x,(hx, cx))
-
+            
+            # add attention
+            #atten_weight--> B * 1 * maxLen
+            atten_weight = self.atten(hx, hidden_state)
+            #print(atten_weight)
+            
+            #context --> B * 1 * zh_hidden_size
+            context = atten_weight.bmm(hidden_state)
+            
+            #context --> B * zh_hidden_size
+            context = context.squeeze(1)
+            
+            #print('context size \n',context)
+            #print('hx size \n', hx)
+            hx = self.ht_(torch.cat((context, hx), 1))
+            hx = F.tanh(hx)
+            #end attention
+            
             logits[i] = self.hx2zh_voc(hx)
 
             _, predicts[i] = torch.max(logits[i], 1)
