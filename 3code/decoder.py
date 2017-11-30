@@ -10,7 +10,7 @@ import attention
 
 class Decoder(nn.Module):
     def __init__(self, use_cuda, zh_voc, zh_dims, zh_hidden_size, 
-                dropout_p, batch_size, zh_maxLength, en_hidden_size):
+                dropout_p, batch_size, zh_maxLength, en_hidden_size, atten_mode=None):
 
         super(Decoder, self).__init__()
 
@@ -19,6 +19,7 @@ class Decoder(nn.Module):
         self.batch_size = batch_size
         self.zh_maxLength = zh_maxLength
         self.zh_voc = zh_voc
+        self.atten_mode = atten_mode
 
         self.zh_embedding = nn.Embedding(num_embeddings = zh_voc,
                                         embedding_dim = zh_dims)
@@ -34,7 +35,7 @@ class Decoder(nn.Module):
                                     out_features = zh_voc)
         
         self.atten = attention.Attention(use_cuda = use_cuda,
-                              mode = 'general',
+                              mode = atten_mode,
                               en_hidden_size = en_hidden_size,
                               zh_hidden_size = zh_hidden_size)
         
@@ -101,24 +102,27 @@ class Decoder(nn.Module):
                     #print('i=%d unused:'% i,inputs_x.size())
             
                     
+         
+            #---------------- add attention-----------------------#
+            if self.atten_mode != None:
+                #atten_weight--> B * 1 * maxLen. it is 'at' in paper
+                atten_weight = self.atten(hx, hidden_state)
+                #print(atten_weight)
+
+                #context --> B * 1 * zh_hidden_size  it is 'ct' in paper
+                context = atten_weight.bmm(hidden_state)
+
+                #context --> B * zh_hidden_size
+                context = context.squeeze(1)
+
+                #print('context size \n',context)
+                #print('hx size \n', hx)
+                hx = self.ht_(torch.cat((context, hx), 1))
+                hx = F.tanh(hx)
+            #----------------end attention------------------------#
+            
             hx, cx = self.lstm_cell(inputs_x,(hx, cx))
             
-            # add attention
-            #atten_weight--> B * 1 * maxLen
-            atten_weight = self.atten(hx, hidden_state)
-            #print(atten_weight)
-            
-            #context --> B * 1 * zh_hidden_size
-            context = atten_weight.bmm(hidden_state)
-            
-            #context --> B * zh_hidden_size
-            context = context.squeeze(1)
-            
-            #print('context size \n',context)
-            #print('hx size \n', hx)
-            hx = self.ht_(torch.cat((context, hx), 1))
-            hx = F.tanh(hx)
-            #end attention
             
             logits[i] = self.hx2zh_voc(hx)
 

@@ -42,6 +42,7 @@ class Attention(nn.Module):
 
         encoder_outputs = encoder_outputs.transpose(0, 1)
 
+        #计算每个encoder_output与hx的分数。至于hx与encoder_output要怎样计算
         for i in range(seq_len):
             energies[i] = self._score(hx, encoder_outputs[i])
 

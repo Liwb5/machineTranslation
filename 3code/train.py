@@ -31,7 +31,7 @@ def timeSince(since, percent):
 
 
 def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_every,
-            batch_size, transformer, agent, hyperparameters):
+            batch_size, transformer, agent, hyperparameters, tf_ratio):
     
     #to display
     hyperparameters['ID'] = 'loss'
@@ -49,7 +49,7 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
 
     global_step = 0
     print_loss = 0
-    tf_ratio = 0.5
+    #tf_ratio = 1
 
     for epoch in range(1,epoches+1):
         batch_count = 0

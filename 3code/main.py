@@ -15,13 +15,16 @@ import seq2seq
 from hyperboard import Agent
 
 
-os.environ["CUDA_VISIBLE_DEVICES"] = '1'
+os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
 use_cuda = torch.cuda.is_available()
 
 sentence_num = 200  #设置数字表示使用一点数据用于测试，设置None表示使用所有数据进行训练
 
-batch_size = 100
+atten_mode = 'general'  #None 表示不使用attention，general表示使用general模式
+tf_ratio = 1.0   #测试的时候是1，以后要慢慢降低这个数
+
+batch_size = 50
 en_dims = 512
 zh_dims = 512
 en_hidden_size = 512
@@ -75,7 +78,8 @@ if __name__ == '__main__':
                  dropout_p = dropout_p,
                  weight = weight,
                  zh_maxLength = zh_maxLength,
-                 batch_size = batch_size)
+                 batch_size = batch_size,
+                 atten_mode = atten_mode)
     
     #pre_trained = torch.load('../models/test.model')
     #net.load_state_dict(pre_trained)
@@ -91,7 +95,8 @@ if __name__ == '__main__':
             batch_size = batch_size,
             transformer = tf, 
             agent = agent,
-            hyperparameters = hyperparameters)
+            hyperparameters = hyperparameters,
+            tf_ratio=tf_ratio)
     
     train.printPredictsFromDataset(use_cuda, net, train_loader, tf, count = 10)
     

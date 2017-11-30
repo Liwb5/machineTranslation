@@ -15,7 +15,7 @@ from decoder import Decoder
 class Net(nn.Module):
     def __init__(self, use_cuda, en_voc, en_dims, en_hidden_size, 
                 zh_voc, zh_dims, zh_hidden_size, dropout_p, weight,
-                zh_maxLength, batch_size):
+                zh_maxLength, batch_size, atten_mode):
 
         super(Net, self).__init__()
 
@@ -27,6 +27,9 @@ class Net(nn.Module):
         self.zh_dims = zh_dims
         self.zh_hidden_size = zh_hidden_size
         self.weight = torch.Tensor(weight)
+        
+        if atten_mode != None:
+            print('using attention, attention mode is %s \n' % atten_mode)
 
         self.en_embedding = nn.Embedding(num_embeddings = en_voc,
                                         embedding_dim = en_dims)
@@ -48,7 +51,8 @@ class Net(nn.Module):
                                 dropout_p = dropout_p,
                                 batch_size = batch_size,
                                 zh_maxLength = zh_maxLength,
-                                en_hidden_size = en_hidden_size)
+                                en_hidden_size = en_hidden_size,
+                                atten_mode = atten_mode)
         
         
     def order(self, inputs, inputs_len):
