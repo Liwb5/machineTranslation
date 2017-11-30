@@ -63,7 +63,7 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
             zhlen = data['zh_lengths']
             zhlabels = data['zh_labels_list'] #used for evaluating
             
-            print(entext)
+            #print(entext)
             #do some thing to teacher_forcing_ratio
             #平常测试的时候就可以不让ssprob随时间变化
             if tf_ratio != None:
@@ -148,6 +148,8 @@ def evaluate(use_cuda, net, entext, gtruths, zhlabels, enlen, transformer):
     net.train()
     
     return en_origin, zh_answer, zh_predicts
+
+
 
 
 def printPredictsFromDataset(use_cuda, net, data_loader, transformer, count):
