@@ -38,6 +38,8 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
     lossRecord = agent.register(hyperparameters,'loss',True)
     hyperparameters['ID'] = 'BLEUscore'
     scoreRecord = agent.register(hyperparameters,'BLEUscore', True)
+    hyperparameters['ID'] = 'scheduled sampling pro'
+    ssprobRecord = agent.register(hyperparameters, 'ssprob', True)
     
     if use_cuda:
         net.cuda()
@@ -49,7 +51,7 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
 
     global_step = 0
     print_loss = 0
-    #tf_ratio = 1
+    
 
     for epoch in range(1,epoches+1):
         batch_count = 0
@@ -62,9 +64,13 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
             zhlabels = data['zh_labels_list'] #used for evaluating
             
             #do some thing to teacher_forcing_ratio
-            
+            #平常测试的时候就可以不让ssprob随时间变化
+            if tf_ratio != None:
+                ssprob = tf_ratio
+            else:
+                ssprob = max(math.exp(-(global_steps)/200000-0.1), 0.5)
 
-            logits, predicts = net(entext, zhgtruths, enlen, teacher_forcing_ratio=tf_ratio)
+            logits, predicts = net(entext, zhgtruths, enlen, teacher_forcing_ratio=ssprob)
 
             
             loss = net.get_loss(logits, zhlabels)
@@ -84,6 +90,7 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
             if global_step % print_every == 0:
                 print_avg_loss = print_loss/print_every
                 agent.append(lossRecord, global_step, print_avg_loss)
+                agent.append(ssprobRecord, global_step, ssprob)
                 print_loss = 0
 
                 #calculate BLEU score
@@ -93,10 +100,10 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
                 
                 print('epoch %d/%d | loss %.4f | score %.4f | batch %d' % (epoch, epoches, print_avg_loss, bleu_score, batch_count))
                 
-                if global_step % save_model_every == 0:
-                    print('saving model ...')
-                    torch.save(net.state_dict(), '../models/lr{:.3f}_BS{:d}_tForce{:.3f}_BLEU{:.3f}_steps{:d}.model'\
-                           .format(lr, batch_size, tf_ratio, print_avg_loss, 
+            if global_step % save_model_every == 0:
+                print('saving model ...')
+                torch.save(net.state_dict(), '../models/lr{:.3f}_BS{:d}_tForce{:.3f}_BLEU{:.3f}_steps{:d}.model'\
+                           .format(lr, batch_size, ssprob, print_avg_loss, 
                                    bleu_score, global_step))
 
                     
@@ -145,9 +152,10 @@ def printPredictsFromDataset(use_cuda, net, data_loader, transformer, count):
             print('<', en_origin[i])
             print('=', zh_answer[i])
             print('>',zh_predicts[i]) 
-            break  #只输出一个句子
+            if i == 4:
+                break  #只输出 i+1 个句子
         
-        count -= 1   #总共显示count个句子
+        count -= 1   #总共显示count个batch的句子
         if count == 0:
             break
 

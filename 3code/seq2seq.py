@@ -30,6 +30,8 @@ class Net(nn.Module):
         
         if atten_mode != None:
             print('using attention, attention mode is %s \n' % atten_mode)
+        else:
+            print('not using attention mode.......')
 
         self.en_embedding = nn.Embedding(num_embeddings = en_voc,
                                         embedding_dim = en_dims)

@@ -22,26 +22,28 @@ use_cuda = torch.cuda.is_available()
 sentence_num = 200  #设置数字表示使用一点数据用于测试，设置None表示使用所有数据进行训练
 
 atten_mode = 'general'  #None 表示不使用attention，general表示使用general模式
-tf_ratio = 1.0   #测试的时候是1，以后要慢慢降低这个数
+tf_ratio = None   #测试的时候是1，如果为None表示tf_ratio随着时间变小
 
-batch_size = 50
+batch_size = 120
 en_dims = 512
 zh_dims = 512
 en_hidden_size = 512
 zh_hidden_size = 512
 zh_maxLength = 80
 lr = 0.01
-Epoches = 50
+Epoches = 2
 dropout_p = 0.1
-print_every = 10 #每多少个batch就print一次
-save_model_every = print_every*10000000
+print_every = 5 #每多少个batch就print一次
+save_model_every = 1000000
 
 hyperparameters = {'lr':lr,
              'dropout_p':dropout_p,
              'en_dims':en_dims,
              'hidden_size':en_hidden_size,
-             'batch_size':batch_size}
+             'batch_size':batch_size,
+             'dropout_p': dropout_p}
 
+print(hyperparameters)
 if __name__ == '__main__':
     #train_folder = Folder('../data/train.h5',is_test=False)
     train_folder = Folder('../data/train3.h5',is_eval = False, num = sentence_num)
