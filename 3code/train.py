@@ -38,8 +38,10 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
     lossRecord = agent.register(hyperparameters,'loss',True)
     hyperparameters['ID'] = 'BLEUscore'
     scoreRecord = agent.register(hyperparameters,'BLEUscore', True)
-    hyperparameters['ID'] = 'scheduled sampling pro'
+    hyperparameters['ID'] = 'ssprob'
     ssprobRecord = agent.register(hyperparameters, 'ssprob', True)
+    hyperparameters['ID'] = 'valid_loss'
+    validLoss = agent.register(hyperparameters, 'valid_loss', True)
     
     if use_cuda:
         net.cuda()
@@ -95,10 +97,11 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
                 print_loss = 0
 
                 #calculate BLEU score
-                bleu_score = getBLEU(use_cuda, valid_loader, net, transformer)
+                bleu_score, valid_loss = getBLEUandLoss(use_cuda, valid_loader, net, transformer)
                 agent.append(scoreRecord, global_step, bleu_score)
+                agent.append(validLoss, global_step, valid_loss)
                 
-                print('epoch %d/%d | loss %.4f | score %.4f | ssprob %.3f | batch %d' % (epoch, epoches, print_avg_loss, bleu_score, ssprob, batch_count))
+                print('epoch %d/%d | train_loss %.4f | valid_loss %.4f | score %.4f | ssprob %.3f | batch %d | global_step %d' % (epoch, epoches, print_avg_loss, valid_loss, bleu_score, ssprob, batch_count, global_step))
                 
             if global_step % save_model_every == 0:
                 print('saving model ...')
@@ -115,6 +118,8 @@ def evaluate(use_cuda, net, entext, gtruths, zhlabels, enlen, transformer):
     net.eval()
 
     logits, predicts = net(entext, gtruths, enlen, is_eval = True)
+    
+    loss = net.get_loss(logits, zhlabels).data[0]
 
     en_origin = [0 for i in range(len(entext))]
     zh_predicts = [0 for i in range(len(entext))]
@@ -134,7 +139,7 @@ def evaluate(use_cuda, net, entext, gtruths, zhlabels, enlen, transformer):
     
     net.train()
     
-    return en_origin, zh_answer, zh_predicts
+    return en_origin, zh_answer, zh_predicts, loss
 
 
 
@@ -165,9 +170,10 @@ def printPredictsFromDataset(use_cuda, net, data_loader, transformer, count):
 
 
 
-def getBLEU(use_cuda, data_loader, net, transformer):
+def getBLEUandLoss(use_cuda, data_loader, net, transformer):
     
     bleu_score = 0
+    data_loss = 0
     count = 0
     for data in data_loader:
         count += 1
@@ -177,13 +183,17 @@ def getBLEU(use_cuda, data_loader, net, transformer):
         zhlen = data['zh_lengths']
         zhlabels = data['zh_labels_list'] #used for evaluating    
         
-        _, zh_answer, zh_predicts = evaluate(use_cuda, net, entext, 
+        _, zh_answer, zh_predicts, loss = evaluate(use_cuda, net, entext, 
                                    zhgtruths, zhlabels, enlen, transformer)
         
         bleu_score += score.BLEUscore(zh_predicts, zh_answer)
-
+        data_loss += loss
+        
 
     bleu_score = bleu_score / count
+    data_loss = data_loss / count
     
-    return bleu_score
+    del entext, enlen, zhgtruths, zhlen, zhlabels
+    
+    return bleu_score, data_loss
 
