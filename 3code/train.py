@@ -30,7 +30,7 @@ def timeSince(since, percent):
 
 
 
-def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_every,
+def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, save_model_every,
             batch_size, transformer, agent, hyperparameters, tf_ratio):
     
     #to display
@@ -95,30 +95,16 @@ def train(use_cuda, lr, net, epoches, train_loader, print_every, save_model_ever
                 print_loss = 0
 
                 #calculate BLEU score
-                _, zh_answer, zh_predicts = evaluate(use_cuda, net, entext, zhgtruths, zhlabels, enlen, transformer)
-                bleu_score = score.BLEUscore(zh_predicts, zh_answer)
+                bleu_score = getBLEU(use_cuda, valid_loader, net, transformer)
                 agent.append(scoreRecord, global_step, bleu_score)
                 
-                print('epoch %d/%d | loss %.4f | score %.4f | batch %d' % (epoch, epoches, print_avg_loss, bleu_score, batch_count))
+                print('epoch %d/%d | loss %.4f | score %.4f | ssprob %.3f | batch %d' % (epoch, epoches, print_avg_loss, bleu_score, ssprob, batch_count))
                 
             if global_step % save_model_every == 0:
                 print('saving model ...')
                 torch.save(net.state_dict(), '../models/lr{:.3f}_BS{:d}_tForce{:.3f}_BLEU{:.3f}_steps{:d}.model'\
                            .format(lr, batch_size, ssprob, print_avg_loss, 
                                    bleu_score, global_step))
-
-def evaluateValidData(use_cuda, net):
-    if use_cuda:
-        net.cuda()
-
-    net.eval()
-    
-    with open(path, 'rb') as f:
-        en_index_list, zh_labels_list, en_lengths, zh_lengths = pickle.load(f)
-        
-        for i in range(len(en_index_list)):
-            pass
-            
         
                 
                     
@@ -144,7 +130,8 @@ def evaluate(use_cuda, net, entext, gtruths, zhlabels, enlen, transformer):
         #print('=', zh_answer[i])
         #print('=', zh_gtruths[i])
         #print('>',zh_predicts[i])
-        
+    del logits, predicts
+    
     net.train()
     
     return en_origin, zh_answer, zh_predicts
@@ -178,8 +165,25 @@ def printPredictsFromDataset(use_cuda, net, data_loader, transformer, count):
 
 
 
+def getBLEU(use_cuda, data_loader, net, transformer):
+    
+    bleu_score = 0
+    count = 0
+    for data in data_loader:
+        count += 1
+        entext = data['en_index_list']
+        enlen = data['en_lengths']
+        zhgtruths = data['zh_index_list'] #used for training
+        zhlen = data['zh_lengths']
+        zhlabels = data['zh_labels_list'] #used for evaluating    
+        
+        _, zh_answer, zh_predicts = evaluate(use_cuda, net, entext, 
+                                   zhgtruths, zhlabels, enlen, transformer)
+        
+        bleu_score += score.BLEUscore(zh_predicts, zh_answer)
 
 
-
-
+    bleu_score = bleu_score / count
+    
+    return bleu_score
 

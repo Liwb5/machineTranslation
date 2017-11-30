@@ -15,7 +15,7 @@ import seq2seq
 from hyperboard import Agent
 
 
-os.environ["CUDA_VISIBLE_DEVICES"] = '1'
+os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
 use_cuda = torch.cuda.is_available()
 
@@ -52,6 +52,12 @@ if __name__ == '__main__':
                          num_workers=1,
                          shuffle=False)
 
+    valid_folder =  Folder('../data/valid3.h5', is_eval = False)
+    valid_loader = DataLoader(valid_folder,
+                     batch_size = 50,
+                     num_workers = 1,
+                     shuffle = False)
+    
     
     inputlang = dp.Lang('en')
     outputlang = dp.Lang('zh')
@@ -86,12 +92,15 @@ if __name__ == '__main__':
     #pre_trained = torch.load('../models/test.model')
     #net.load_state_dict(pre_trained)
     print(net)
+    
+    #bleu_score = train.getBLEU(use_cuda, valid_loader, net, transformer)
 
     train.train(use_cuda=use_cuda, 
             lr = lr, 
             net=net,
             epoches = Epoches, 
-            train_loader=train_loader, 
+            train_loader = train_loader,
+            valid_loader = valid_loader,
             print_every = print_every, 
             save_model_every = save_model_every, 
             batch_size = batch_size,

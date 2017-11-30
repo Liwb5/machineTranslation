@@ -54,7 +54,7 @@ class Decoder(nn.Module):
 
     def forward(self, sent_inputs, hidden_state, sent_len, teacher_forcing_ratio, is_eval = False):
         """
-        sent_inputs: B * zh_maxLen * zh_dims的中文句子的variable
+        sent_inputs: B * zh_maxLen 的中文句子的variable
         hidden_state: B * maxSentenceLen * en_hidden_size variable. the output of encoder
         sent_len: B * 1  记录每个中文句子的长度
         use_teacher_ratio: decode时使用上次预测的结果作为下次的input的概率
@@ -62,9 +62,9 @@ class Decoder(nn.Module):
         sent_inputs = self.zh_embedding(sent_inputs)
         
         if self.use_cuda:
-            cx = Variable(torch.zeros(self.batch_size, self.zh_hidden_size)).cuda()
+            cx = Variable(torch.zeros(sent_inputs.size(0), self.zh_hidden_size)).cuda()
         else:
-            cx = Variable(torch.zeros(self.batch_size, self.zh_hidden_size))
+            cx = Variable(torch.zeros(sent_inputs.size(0), self.zh_hidden_size))
 
 
         #hidden_state = torch.transpose(hidden_state, 0, 1).contiguous()
@@ -120,7 +120,6 @@ class Decoder(nn.Module):
                 hx = self.ht_(torch.cat((context, hx), 1))
                 hx = F.tanh(hx)
             #----------------end attention------------------------#
-            
             hx, cx = self.lstm_cell(inputs_x,(hx, cx))
             
             
