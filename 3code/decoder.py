@@ -63,6 +63,7 @@ class Decoder(nn.Module):
         
         if self.use_cuda:
             cx = Variable(torch.zeros(sent_inputs.size(0), self.zh_hidden_size)).cuda()
+            #hx = Variable(torch.zeros(sent_inputs.size(0), hidden_state.size(2))).cuda()
         else:
             cx = Variable(torch.zeros(sent_inputs.size(0), self.zh_hidden_size))
 
@@ -71,7 +72,7 @@ class Decoder(nn.Module):
         sent_inputs = torch.transpose(sent_inputs, 0, 1)
         
         # hx size is B*en_hidden_size
-        #hx = hidden_state[-1].view(hidden_state.size(1), hidden_state.size(2))
+        #hx = hidden_state[-1].view(hidden_state.size(0), hidden_state.size(2))
         
         hx = self.last_timestep(hidden_state.contiguous(), sent_len)
 
@@ -100,8 +101,7 @@ class Decoder(nn.Module):
                 else:
                     inputs_x = self.zh_embedding(predicts[i-1])
                     #print('i=%d unused:'% i,inputs_x.size())
-            
-                    
+   
          
             #---------------- add attention-----------------------#
             if self.atten_mode != None:

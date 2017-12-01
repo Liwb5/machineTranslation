@@ -31,7 +31,12 @@ class Attention(nn.Module):
         hx: B * zh_hidden_size
         encoder_outputs: B * maxLen * en_hidden_size
         """
-
+        energies = self._atten_weight(hx, encoder_outputs)
+        #其实就是返回一个权重向量
+        return F.softmax(energies).unsqueeze(1)    
+        
+        """
+        #下面这一段是非批量的attention。。。。
         seq_len = encoder_outputs.size(1)
 
         # energies --> maxLen * B
@@ -51,7 +56,7 @@ class Attention(nn.Module):
         
         #其实就是返回一个权重向量
         return F.softmax(energies).unsqueeze(1)
-
+        """
     def _score(self, hx, encoder_output):
 
         if self.mode == 'dot':
@@ -66,3 +71,29 @@ class Attention(nn.Module):
             energy = self.attention(torch.cat((hx, encoder_output), 1)) #按行拼接
             
         return energy
+    
+    def _atten_weight(self, hx, encoder_outputs):
+        """
+        from: Effective Approaches to Attention-based Neural Machine Translation
+        hx: B * zh_hidden_size
+        encoder_outputs: B * maxLen * en_hidden_size
+        """
+        encoder_outputs = encoder_outputs.transpose(0, 1)
+        
+        #change hx to maxLen * B * zh_hidden_size
+        hx = hx.expand(encoder_outputs.size(0), hx.size(0), hx.size(1))
+        
+        
+        if self.mode == 'dot':
+            pass
+        elif self.mode == 'general':
+            energies = self.attention(encoder_outputs)
+            energies = torch.sum(hx*energies, 2)
+        elif self.mode == 'concat':
+            pass
+        else:
+            print('the attention mode is not right.')
+           
+        #change to B * maxLen 
+        energies = energies.transpose(0, 1)
+        return energies

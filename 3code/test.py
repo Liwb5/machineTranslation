@@ -19,22 +19,22 @@ os.environ["CUDA_VISIBLE_DEVICES"] = '1'
 
 use_cuda = torch.cuda.is_available()
 
-sentence_num = None  #设置数字表示使用一点数据用于测试，设置None表示使用所有数据进行训练
+sentence_num = 200  #设置数字表示使用一点数据用于测试，设置None表示使用所有数据进行训练
 
 atten_mode = 'general'  #None 表示不使用attention，general表示使用general模式
 tf_ratio = None   #测试的时候是1，如果为None表示tf_ratio随着时间变小
 
-batch_size = 120
+batch_size = 200
 en_dims = 512
 zh_dims = 512
 en_hidden_size = 512
 zh_hidden_size = 512
 zh_maxLength = 80
 lr = 0.01
-Epoches = 2
+Epoches = 50
 dropout_p = 0.1
-print_every = 2 #每多少个batch就print一次
-save_model_every = batch_size*1000#设置多少个batch就保存一次模型
+print_every = 1 #每多少个batch就print一次
+save_model_every = batch_size*100000#设置多少个batch就保存一次模型
 
 hyperparameters = {'lr':lr,
              'dropout_p':dropout_p,
@@ -66,7 +66,7 @@ if __name__ == '__main__':
 
     tf = transformer.Transformer(inputlang, outputlang)
     
-    agent = Agent(address='127.0.0.1',port=5100)
+    agent = Agent(address='127.0.0.1',port=5101)
     
     
     
@@ -109,7 +109,7 @@ if __name__ == '__main__':
             hyperparameters = hyperparameters,
             tf_ratio=tf_ratio)
     
-    #train.printPredictsFromDataset(use_cuda, net, train_loader, tf, count = 10)
+    train.printPredictsFromDataset(use_cuda, net, train_loader, tf, count = 10)
     
     
     

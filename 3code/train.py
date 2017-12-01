@@ -32,6 +32,7 @@ def timeSince(since, percent):
 
 def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, save_model_every,
             batch_size, transformer, agent, hyperparameters, tf_ratio):
+    start_time = time.time()
     
     #to display
     hyperparameters['ID'] = 'loss'
@@ -90,6 +91,9 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
             
             batch_count += 1  #新的epoch下就会置零
             global_step += 1  #每个batch加1
+            
+            
+            
             if global_step % print_every == 0:
                 print_avg_loss = print_loss/print_every
                 agent.append(lossRecord, global_step, print_avg_loss)
@@ -97,11 +101,15 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
                 print_loss = 0
 
                 #calculate BLEU score
-                bleu_score, valid_loss = getBLEUandLoss(use_cuda, valid_loader, net, transformer)
+                #bleu_score, valid_loss = getBLEUandLoss(use_cuda, valid_loader, net, transformer)
+                bleu_score = 0
+                valid_loss = 0
                 agent.append(scoreRecord, global_step, bleu_score)
                 agent.append(validLoss, global_step, valid_loss)
                 
-                print('epoch %d/%d | train_loss %.4f | valid_loss %.4f | score %.4f | ssprob %.3f | batch %d | global_step %d' % (epoch, epoches, print_avg_loss, valid_loss, bleu_score, ssprob, batch_count, global_step))
+                
+                
+                print('epoch %d/%d | train_loss %.4f | valid_loss %.4f | score %.4f | ssprob %.3f | batch %d | global_step %d | %s' % (epoch, epoches, print_avg_loss, valid_loss, bleu_score, ssprob, batch_count, global_step, timeSince(start_time, batch_size*global_step/(epoches*9890000))))
                 
             if global_step % save_model_every == 0:
                 print('saving model ...')
@@ -154,8 +162,7 @@ def printPredictsFromDataset(use_cuda, net, data_loader, transformer, count):
         zhlen = data['zh_lengths']
         zhlabels = data['zh_labels_list'] #used for evaluating
 
-        en_origin, zh_answer, zh_predicts = evaluate(use_cuda, net, entext, 
-                                   zhgtruths, zhlabels, enlen, transformer)
+        en_origin, zh_answer, zh_predicts, _ = evaluate(use_cuda, net, entext, zhgtruths, zhlabels, enlen, transformer)
         
         for i in range(len(en_origin)):
             print('<', en_origin[i])
