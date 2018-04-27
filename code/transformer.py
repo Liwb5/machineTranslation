@@ -1,5 +1,9 @@
 import dataProcess as dp 
 
+#Transformer类可以将下标转成对应的单词。
+#这样在训练后进行测试可以输出来给人类看。比较直观。
+
+
 SOS_token = 0
 EOS_token = 1
 __PADDING__ = 2
