@@ -50,14 +50,16 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
     optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, net.parameters()),
                                 lr = lr)
 
-    net.train()
+    net.train()#nn.Module中的一个成员函数，设置为训练模式，
+               #如果加了dropout，BN等，那么训练和评估就不一样了，
+               # 所以这个设置可以区分在训练还是在评估。
 
-    global_step = 0
-    print_loss = 0
+    global_step = 0  #记录总共运行了多少batch
+    print_loss = 0  #记录loss值
     
 
     for epoch in range(1,epoches+1):
-        batch_count = 0
+        batch_count = 0  #记录每个epoch有多少batch
         for data in train_loader:
 
             entext = data['en_index_list']
@@ -83,7 +85,7 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
 
             optimizer.zero_grad()
 
-            loss.backward()
+            loss.backward() 
 
             optimizer.step()            
             
@@ -100,7 +102,7 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
                 agent.append(ssprobRecord, global_step, ssprob)
                 print_loss = 0
 
-                #calculate BLEU score
+                #calculate BLEU score and valid loss
                 #bleu_score, valid_loss = getBLEUandLoss(use_cuda, valid_loader, net, transformer)
                 bleu_score = 0
                 valid_loss = 0
@@ -123,7 +125,10 @@ def evaluate(use_cuda, net, entext, gtruths, zhlabels, enlen, transformer):
     if use_cuda:
         net.cuda()
 
-    net.eval()
+    net.eval() #nn.Module中的一个成员函数，设置为评估模式，
+               #如果加了dropout，BN等，那么训练和评估就不一样了，
+               # 所以这个设置可以区分在训练还是在评估。
+
 
     logits, predicts = net(entext, gtruths, enlen, is_eval = True)
     
