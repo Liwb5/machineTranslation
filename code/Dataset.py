@@ -16,7 +16,7 @@ from torch.utils import data
 #---------------------------------
 
 
-class Folder(data.Dataset):
+class Dataset(data.Dataset):
     #有时候我们只是想拿一部分句子训练，看看效果，通过设置num参数就可以做到
     def __init__(self, filepath, is_eval, num=None):
         
