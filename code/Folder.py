@@ -10,14 +10,22 @@ import random
 import h5py
 from torch.utils import data
 
+#---------------------------------
+#这个文件是用于加载数据的。
+#原始数据被处理后时保存在了h5py文件格式里，现在要加载出来以便进行训练。
+#---------------------------------
+
+
 class Folder(data.Dataset):
-    
+    #有时候我们只是想拿一部分句子训练，看看效果，通过设置num参数就可以做到
     def __init__(self, filepath, is_eval, num=None):
         
         self.file = h5py.File(filepath, 'r')
         self.is_eval = is_eval
         self.num = num
         
+        #使用多少句子进行训练
+        #有时候我们只是想拿一部分句子训练，看看效果，通过设置num参数就可以做到
         if self.num != None:
             print('use %d sentences to train'% self.num)
             self.en_index_list = self.file['en_index_list'][0:self.num]
@@ -26,7 +34,7 @@ class Folder(data.Dataset):
             self.zh_lengths = self.file['zh_lengths'][0:self.num]
             self.zh_labels_list = self.file['zh_labels_list'][0:self.num]     
             
-            self.nb_samples = len(self.en_index_list)
+            self.nb_samples = len(self.en_index_list)#样本数量
         
         else:
             print('use all sentences to train')
@@ -36,15 +44,17 @@ class Folder(data.Dataset):
             self.zh_lengths = self.file['zh_lengths']
             self.zh_labels_list = self.file['zh_labels_list']  
             
-            self.nb_samples = len(self.en_index_list)
+            self.nb_samples = len(self.en_index_list)#样本数量
         
         
+    #读取下标为index 的样本
     def __getitem__(self, index):
         
         en_index_list = self.en_index_list[index]
         
         en_lengths = self.en_lengths[index]
         
+        #如果是测试集，就只有英文了。
         if self.is_eval == True:
             return {'en_index_list': en_index_list, 'en_lengths': en_lengths}
         
