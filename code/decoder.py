@@ -52,15 +52,23 @@ class Decoder(nn.Module):
         idx = Variable(idx).long().cuda() if self.use_cuda else Variable(idx).long()
         return unpacked.gather(1, idx).squeeze()
 
-    def forward(self, sent_inputs, hidden_state, sent_len, teacher_forcing_ratio, is_eval = False):
+    def forward(self, sent_inputs, hidden_state, encoder_h_n, sent_len, teacher_forcing_ratio, is_eval = False):
         """
-        sent_inputs: B * zh_maxLen 的中文句子的variable
-        hidden_state: B * maxSentenceLen * en_hidden_size variable. the output of encoder
+        sent_inputs: B * zh_maxLen 的中文句子的tensor
+        hidden_state: B * en_maxLen * en_hidden_size variable. the hidden state of encoder 
+        encoder_h_n: (num_layers * num_directions) * B * en_hidden_size  encoder输出的最后一个隐藏状态
         sent_len: B * 1  记录每个中文句子的长度
         use_teacher_ratio: decode时使用上次预测的结果作为下次的input的概率
         """
+        if self.use_cuda:
+            sent_inputs = Variable(sent_inputs).long().cuda()
+        else:
+            sent_inputs = Variable(sent_inputs).long()
+            
+        #sent_inputs: B * zh_maxLen * zh_dim
         sent_inputs = self.zh_embedding(sent_inputs)
         
+        # cx 是什么？？？
         if self.use_cuda:
             cx = Variable(torch.zeros(sent_inputs.size(0), self.zh_hidden_size)).cuda()
             #hx = Variable(torch.zeros(sent_inputs.size(0), hidden_state.size(2))).cuda()
@@ -69,11 +77,11 @@ class Decoder(nn.Module):
 
 
         #hidden_state = torch.transpose(hidden_state, 0, 1).contiguous()
+        # 转置  sent_inputs: zh_maxLen * B * zh_dim
         sent_inputs = torch.transpose(sent_inputs, 0, 1)
         
         # hx size is B*en_hidden_size
         #hx = hidden_state[-1].view(hidden_state.size(0), hidden_state.size(2))
-        
         hx = self.last_timestep(hidden_state.contiguous(), sent_len)
 
         #我们要用这两个变量去存储输出的数据(是variable类型),所以这两个变量不应该是variable，
@@ -120,9 +128,7 @@ class Decoder(nn.Module):
                 hx = self.ht_(torch.cat((context, hx), 1))
                 hx = F.tanh(hx)
             #----------------end attention------------------------#
-            hx, cx = self.lstm_cell(inputs_x,(hx, cx))
-            
-            
+
             logits[i] = self.hx2zh_voc(hx)
 
             _, predicts[i] = torch.max(logits[i], 1)
@@ -130,6 +136,8 @@ class Decoder(nn.Module):
             logits[i] = logits[i].view(1, logits[i].size(0), logits[i].size(1))
             predicts[i] = predicts[i].view(1, predicts[i].size(0))
 
+            #hx: B * zh_hidden_size;  cx; B * zh_hidden_size
+            hx, cx = self.lstm_cell(inputs_x,(hx, cx))
             
         logits = torch.cat(logits)
         predicts = torch.cat(predicts, 0)

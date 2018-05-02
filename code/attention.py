@@ -20,8 +20,8 @@ class Attention(nn.Module):
 
         #define layers
         if self.mode == 'general':
-            self.attention = nn.Linear(self.en_hidden_size, 
-                                        self.zh_hidden_size)
+            self.attention = nn.Linear(self.zh_hidden_size, 
+                                        self.en_hidden_size)
         elif self.mode == 'concat':
             self.attention = nn.Linear(self.zh_hidden_size + self.en_hidden_size, self.zh_hidden_size)
 

@@ -67,8 +67,9 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
             zhgtruths = data['zh_index_list'] #used for training
             zhlen = data['zh_lengths']
             zhlabels = data['zh_labels_list'] #used for evaluating
+            #上面这些变量的都是B * maxLen的tensor
             
-            #print(entext)
+            
             #do some thing to teacher_forcing_ratio
             #平常测试的时候就可以不让ssprob随时间变化
             if tf_ratio != None:
