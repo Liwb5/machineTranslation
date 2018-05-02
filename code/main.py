@@ -20,9 +20,10 @@ os.environ["CUDA_VISIBLE_DEVICES"] = '1'#
 
 use_cuda = torch.cuda.is_available()
 
+
 sentence_num = 100  #设置数字表示使用部分数据用于测试代码是否正确，设置None表示使用所有数据进行训练
 
-atten_mode = None  #None 表示不使用attention，general表示使用general模式
+atten_mode = 'general'  #None 表示不使用attention，general表示使用general模式
 tf_ratio = None   #测试的时候是1，如果为None表示tf_ratio随着时间变小
 
 batch_size = 50
@@ -32,18 +33,29 @@ en_hidden_size = 256
 zh_hidden_size = 256
 zh_maxLength = 80
 lr = 0.01
-Epoches = 200
+Epoches = 100
 dropout_p = 0.1
 
 print_every = 2 #每多少个batch就print一次
 save_model_every = batch_size*1000#设置多少个batch就保存一次模型
 
-hyperparameters = {'lr':lr,
-             'dropout_p':dropout_p,
-             'en_dims':en_dims,
-             'hidden_size':en_hidden_size,
-             'batch_size':batch_size,
-             'dropout_p': dropout_p}
+hyperparameters = {'epoches': 200,
+                   'batch_size': 50,
+                   'sentence_num': 100, #设置100表示使用100个句子作为训练集，设置None表示使用所有数据进行训练
+                   'tf_ratio': None,    #测试的时候需要设置为0，训练的时候设置为None表示tf_ratio随着时间变小
+                   'atten_mode': 'general',  # None 表示不使用attention，general表示使用general模式
+                   
+                   'lr': 0.01,
+                   'dropout_p': 0.1,
+                   'en_dims': 256,
+                   'zh_dims': 256,
+                   'en_hidden_state': 256,
+                   'zh_hidden_state': 256,
+                   'zh_maxLength': 80,
+                   
+                   'print_every': 2,   #每多少个batch就print一次
+                   'save_model_every': 10000000  #设置多少个batch就保存一次模型
+                  }
 
 print(hyperparameters)
 if __name__ == '__main__':
@@ -51,7 +63,8 @@ if __name__ == '__main__':
     if path != "":
         os.chdir(path) #将当前路径设置为本文件所在的目录，方便下面读取文件。
     
-    #加载数据，为了可以使用dataLoader批量加载数据，需要定义一个Dataset类，按照pytorch的说明，定义好几个必要的函数后就可以使用dataLoader加载了，详情看Dataset文件。
+    #加载数据，为了可以使用dataLoader批量加载数据，需要定义一个Dataset类，
+    #按照pytorch的说明，定义好几个必要的函数后就可以使用dataLoader加载了，详情看Dataset文件。
     trainDataset = Dataset('../dataAfterProcess/train3.h5',is_eval = False, num = sentence_num)
     train_loader = DataLoader(trainDataset,
                          batch_size=batch_size,
@@ -117,7 +130,7 @@ if __name__ == '__main__':
                 hyperparameters = hyperparameters,
                 tf_ratio=tf_ratio)
     
-    #train.printPredictsFromDataset(use_cuda, net, train_loader, tf, count = 10)
+    train.printPredictsFromDataset(use_cuda, net, train_loader, tf, count = 10)
     
     
     

@@ -34,7 +34,7 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
             batch_size, transformer, agent, hyperparameters, tf_ratio):
     start_time = time.time()
     
-    #to display
+    #to display in hyperboard
     hyperparameters['ID'] = 'loss'
     lossRecord = agent.register(hyperparameters,'loss',True)
     hyperparameters['ID'] = 'BLEUscore'
@@ -70,7 +70,7 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
             #上面这些变量的都是B * maxLen的tensor
             
             
-            #do some thing to teacher_forcing_ratio
+            #configure the teacher_forcing_ratio
             #平常测试的时候就可以不让ssprob随时间变化
             if tf_ratio != None:
                 ssprob = tf_ratio
@@ -79,7 +79,6 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
 
             logits, predicts = net(entext, zhgtruths, enlen, teacher_forcing_ratio=ssprob)
 
-            
             loss = net.get_loss(logits, zhlabels)
 
             print_loss += loss.data[0]

@@ -22,7 +22,7 @@ class Net(nn.Module):
         self.use_cuda = use_cuda
         self.en_voc = en_voc      #英文单词的个数
         self.en_dims = en_dims    #英文词向量的长度
-        self.en_hidden_size = en_hidden_size   
+        self.en_hidden_size = en_hidden_size   #英文词隐藏层向量的长度
         self.zh_voc = zh_voc
         self.zh_dims = zh_dims
         self.zh_hidden_size = zh_hidden_size
@@ -59,23 +59,23 @@ class Net(nn.Module):
                                 atten_mode = atten_mode)
         
         
-    def order(self, inputs, inputs_len):
+    def order(self, inputs, entext_len):
         """
         order函数将句子的长度按从大到小排序
         inputs: B*en_maxLen. a tensor object
-        inputs_len: B * 1. the real length of every sentence
+        entext_len: B * 1. the real length of every sentence
         
         return:
         inputs: B * maxLen  tensor
-        inputs_len: B * 1  tensor
+        entext_len: B * 1  tensor
         order_ids:  B * 1  tensor
         """
-        #将inputs_len按从大到小排序
-        inputs_len, sort_ids = torch.sort(inputs_len, dim = 0, descending=True)
+        #将entext_len按从大到小排序
+        sorted_len, sort_ids = torch.sort(entext_len, dim = 0, descending=True)
         
         sort_ids = Variable(sort_ids).cuda() if self.use_cuda else Variable(sort_ids)
         
-        inputs = inputs.index_select(0, sort_ids)#sort_ids 是B*1的矩阵，要转换成vector
+        inputs = inputs.index_select(0, sort_ids)
         
         #似乎这一步没有必要
         #_, true_order_ids = torch.sort(sort_ids, 0, descending=False)
@@ -84,44 +84,41 @@ class Net(nn.Module):
         
         #排序之后，inputs按照句子长度从大到小排列
         #sort_ids是原来batch的顺序，因为后面需要将顺序调回来
-        return inputs, inputs_len, sort_ids
+        return inputs, sorted_len, sort_ids
     
 
-    def forward(self, inputs, gtruths, inputs_len,teacher_forcing_ratio = 1, is_eval=False):
+    def forward(self, entext, zh_gtruths, entext_len,teacher_forcing_ratio = 1, is_eval=False):
         """
-        inputs: B*en_maxLen 的Long tensor
-        gtruths： B*zh_maxLen 的Long tensor
-        inputs_len: inputs中的每个句子的真实长度
+        entext: B*en_maxLen 的英文句子，Long tensor
+        zh_gtruths： B*zh_maxLen 的中文句子，Long tensor
+        entext_len: entext中的每个句子的真实长度
         """
 
-        #似乎这一步没有什么必要
-        
         if self.use_cuda:
-            inputs = Variable(inputs).long().cuda()
-            gtruths = Variable(gtruths).long().cuda()
+            entext = Variable(entext).long().cuda()
+            zh_gtruths = Variable(zh_gtruths).long().cuda()
         else:
-            inputs = Variable(inputs).long()
-            gtruths = Variable(gtruths).long()
+            entext = Variable(entext).long()
+            zh_gtruths = Variable(zh_gtruths).long()
           
         # order函数将句子的长度按从大到小排序
-        inputs, sorted_len, true_order_ids = self.order(inputs, inputs_len)
+        #entext: varibale, sorted_len: tensor, true_order_ids: variable
+        entext, sorted_len, true_order_ids = self.order(entext, entext_len)
 
         #embedding的输入需要是variable
-        #inputs = Variable(inputs).cuda() if self.use_cuda else Variable(inputs)
-        #inputs: B * maxLen * en_dim
-        inputs = self.en_embedding(inputs)
+        #en_embed: B * maxLen * en_dim
+        en_embedding = self.en_embedding(entext)
         
-
         # encoder_outputs --> B * en_maxLen * en_hidden_size
         # encoder_h_n -->  (num_layers * num_directions) * B * en_hidden_size
-        encoder_outputs, encoder_h_n = self.encoder(inputs, sorted_len)
+        encoder_outputs, encoder_h_n = self.encoder(en_embedding, sorted_len)
         
         #换回原先的顺序
         encoder_outputs = encoder_outputs.index_select(0, true_order_ids)
 
         #logits --> B * L* zh_voc
         #predicts --> B * L   it is not tensor
-        logits, predicts = self.decoder(gtruths, encoder_outputs, encoder_h_n, inputs_len,
+        logits, predicts = self.decoder(zh_gtruths, encoder_outputs, encoder_h_n, entext_len,
                     teacher_forcing_ratio= teacher_forcing_ratio, is_eval=is_eval)
 
         #logits -->B  * zh_maxLen * zh_voc

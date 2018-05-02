@@ -7,8 +7,8 @@ class Encoder(nn.Module):
     def __init__(self, use_cuda, en_dims, en_hidden_size, 
         dropout_p, bidirectional=False):
         """
-        en_dims: 输入词向量的维度
-        en_hidden_size: 输入隐藏层的维度
+        en_dims: 英文词向量的维度
+        en_hidden_size: 英文隐藏层的维度
 
         """
         super(Encoder, self).__init__()
@@ -26,25 +26,26 @@ class Encoder(nn.Module):
                             dropout = dropout_p,
                             bidirectional = bidirectional)#双向lstm
 
-    def forward(self, sent_inputs, sent_len):
+    def forward(self, en_embedding, sent_len):
         """
-        sent_inputs: B*en_maxLen*en_dims句子长度乘以词向量的长度的variable
+        en_embedding: B*en_maxLen*en_dims句子长度乘以词向量的长度的variable
         sent_len: B * 1. batch中每个句子的长度 tensor
         
         return:
         unpacked.transpose(0, 1): B * en_maxLen * en_hidden_size
         """
         
-        #change sent_inputs size to en_maxLen*B*en_dims
-        sent_inputs = torch.transpose(sent_inputs, 0, 1)
+        #change en_embedding size to en_maxLen*B*en_dims
+        en_embedding = torch.transpose(en_embedding, 0, 1)
         #Packs a Tensor containing padded sequences of variable length.
-        packed = rnn_utils.pack_padded_sequence(input = sent_inputs,  
+        packed = rnn_utils.pack_padded_sequence(input = en_embedding,  
                                        lengths = list(sent_len))
 
         #packed_out: en_maxLen* B * en_hidden_size 
-        packed_out, _ = self.lstm(packed)
+        # h_n 是最后一个隐藏层的输出，大小为：(num_layers * num_directions, batch, hidden_size)
+        packed_out, h_n = self.lstm(packed)
 
-        unpacked, h_n = rnn_utils.pad_packed_sequence(packed_out)
+        unpacked, _ = rnn_utils.pad_packed_sequence(packed_out)
         
         #print('unpacked size:', unpacked.size())
         #在返回之前，先将返回值变回B*en_maxLen_en_hidden_size
