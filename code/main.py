@@ -47,14 +47,18 @@ hyperparameters = {'lr':lr,
 
 print(hyperparameters)
 if __name__ == '__main__':
+    path = os.path.dirname(__file__) #获得本文件所在的目录
+    if path != "":
+        os.chdir(path) #将当前路径设置为本文件所在的目录，方便下面读取文件。
+    
     #加载数据，为了可以使用dataLoader批量加载数据，需要定义一个Dataset类，按照pytorch的说明，定义好几个必要的函数后就可以使用dataLoader加载了，详情看Dataset文件。
-    trainDataset = Dataset('./dataAfterProcess/train3.h5',is_eval = False, num = sentence_num)
+    trainDataset = Dataset('../dataAfterProcess/train3.h5',is_eval = False, num = sentence_num)
     train_loader = DataLoader(trainDataset,
                          batch_size=batch_size,
                          num_workers=1,#多进程，并行加载
                          shuffle=False)
 
-    validDataset =  Dataset('./dataAfterProcess/valid3.h5', is_eval = False)
+    validDataset =  Dataset('../dataAfterProcess/valid3.h5', is_eval = False)
     valid_loader = DataLoader(validDataset,
                      batch_size = 50,
                      num_workers = 1,
@@ -63,8 +67,8 @@ if __name__ == '__main__':
     #加载两个语言库
     inputlang = dp.Lang('en')
     outputlang = dp.Lang('zh')
-    inputlang.load('../data/en_dict3.pkl')
-    outputlang.load('../data/zh_dict3.pkl')
+    inputlang.load('../dataAfterProcess/en_dict3.pkl')
+    outputlang.load('../dataAfterProcess/zh_dict3.pkl')
 
     #transformer可以将词的下标转成对应的单词，方便我们查看
     tf = transformer.Transformer(inputlang, outputlang)

@@ -73,9 +73,9 @@ class Net(nn.Module):
         #将inputs_len按从大到小排序
         inputs_len, sort_ids = torch.sort(inputs_len, dim = 0, descending=True)
         
-        #sort_ids = Variable(sort_ids).cuda() if self.use_cuda else Variable(sort_ids)
+        sort_ids = Variable(sort_ids).cuda() if self.use_cuda else Variable(sort_ids)
         
-        inputs = inputs.index_select(0, sort_ids.view(-1))#sort_ids 是B*1的矩阵，要转换成vector
+        inputs = inputs.index_select(0, sort_ids)#sort_ids 是B*1的矩阵，要转换成vector
         
         #似乎这一步没有必要
         #_, true_order_ids = torch.sort(sort_ids, 0, descending=False)
@@ -83,8 +83,8 @@ class Net(nn.Module):
         #true_order_ids = Variable(true_order_ids).cuda() if self.use_cuda else Variable(true_order_ids)
         
         #排序之后，inputs按照句子长度从大到小排列
-        #true_order_ids是原来batch的顺序，因为后面需要将顺序调回来
-        return inputs, inputs_len, order_ids
+        #sort_ids是原来batch的顺序，因为后面需要将顺序调回来
+        return inputs, inputs_len, sort_ids
     
 
     def forward(self, inputs, gtruths, inputs_len,teacher_forcing_ratio = 1, is_eval=False):
@@ -95,19 +95,19 @@ class Net(nn.Module):
         """
 
         #似乎这一步没有什么必要
-        """
+        
         if self.use_cuda:
             inputs = Variable(inputs).long().cuda()
             gtruths = Variable(gtruths).long().cuda()
         else:
             inputs = Variable(inputs).long()
             gtruths = Variable(gtruths).long()
-        """    
+          
         # order函数将句子的长度按从大到小排序
         inputs, sorted_len, true_order_ids = self.order(inputs, inputs_len)
 
         #embedding的输入需要是variable
-        inputs = Variable(inputs).cuda() if self.use_cuda else Variable(inputs)
+        #inputs = Variable(inputs).cuda() if self.use_cuda else Variable(inputs)
         #inputs: B * maxLen * en_dim
         inputs = self.en_embedding(inputs)
         
