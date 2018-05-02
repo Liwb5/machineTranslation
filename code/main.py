@@ -22,7 +22,7 @@ use_cuda = torch.cuda.is_available()
 
 sentence_num = 100  #设置数字表示使用部分数据用于测试代码是否正确，设置None表示使用所有数据进行训练
 
-atten_mode = 'general'  #None 表示不使用attention，general表示使用general模式
+atten_mode = None  #None 表示不使用attention，general表示使用general模式
 tf_ratio = None   #测试的时候是1，如果为None表示tf_ratio随着时间变小
 
 batch_size = 50

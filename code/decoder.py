@@ -44,7 +44,7 @@ class Decoder(nn.Module):
         
     def last_timestep(self, unpacked, sent_len):
         """
-        unpacked: B * maxSentenceLen * en_hidden_size
+        unpacked: B * maxLen * en_hidden_size
         sent_len: B*1  the real length of every sentence
         """
         #Index of the last output for each sequence
@@ -60,10 +60,12 @@ class Decoder(nn.Module):
         sent_len: B * 1  记录每个中文句子的长度
         use_teacher_ratio: decode时使用上次预测的结果作为下次的input的概率
         """
+        """
         if self.use_cuda:
             sent_inputs = Variable(sent_inputs).long().cuda()
         else:
             sent_inputs = Variable(sent_inputs).long()
+        """
             
         #sent_inputs: B * zh_maxLen * zh_dim
         sent_inputs = self.zh_embedding(sent_inputs)
@@ -127,8 +129,9 @@ class Decoder(nn.Module):
                 #print('hx size \n', hx)
                 hx = self.ht_(torch.cat((context, hx), 1))
                 hx = F.tanh(hx)
+                
             #----------------end attention------------------------#
-
+            
             logits[i] = self.hx2zh_voc(hx)
 
             _, predicts[i] = torch.max(logits[i], 1)
