@@ -131,9 +131,10 @@ class Decoder(nn.Module):
                 hx = F.tanh(hx)
                 
             #----------------end attention------------------------#
-            
-            logits[i] = self.hx2zh_voc(hx)
+            #logits[i] 第i个decoder预测成每个词的概率（这里没有用softmax归一化）
+            logits[i] = self.hx2zh_voc(hx) 
 
+            #选择概率最大的那个作为预测的结果
             _, predicts[i] = torch.max(logits[i], 1)
             
             logits[i] = logits[i].view(1, logits[i].size(0), logits[i].size(1))

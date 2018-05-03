@@ -27,7 +27,7 @@ class Transformer:
                 text += token
 
         else:
-            
+           
             for i in range(len(indexes)):
                 #print(indexes[i])
                 if indexes[i] == EOS_token or indexes[i] == __PADDING__:

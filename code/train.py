@@ -31,18 +31,19 @@ def timeSince(since, percent):
 
 
 def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, save_model_every,
-            batch_size, transformer, agent, hyperparameters, tf_ratio):
+            batch_size, transformer, hyperparameters, tf_ratio,agent=None):
     start_time = time.time()
     
-    #to display in hyperboard
-    hyperparameters['ID'] = 'loss'
-    lossRecord = agent.register(hyperparameters,'loss',True)
-    hyperparameters['ID'] = 'BLEUscore'
-    scoreRecord = agent.register(hyperparameters,'BLEUscore', True)
-    hyperparameters['ID'] = 'ssprob'
-    ssprobRecord = agent.register(hyperparameters, 'ssprob', True)
-    hyperparameters['ID'] = 'valid_loss'
-    validLoss = agent.register(hyperparameters, 'valid_loss', True)
+    if agent != None:
+        #to display in hyperboard
+        hyperparameters['ID'] = 'loss'
+        lossRecord = agent.register(hyperparameters,'loss',True)
+        hyperparameters['ID'] = 'BLEUscore'
+        scoreRecord = agent.register(hyperparameters,'BLEUscore', True)
+        hyperparameters['ID'] = 'ssprob'
+        ssprobRecord = agent.register(hyperparameters, 'ssprob', True)
+        hyperparameters['ID'] = 'valid_loss'
+        validLoss = agent.register(hyperparameters, 'valid_loss', True)
     
     if use_cuda:
         net.cuda()
@@ -77,6 +78,8 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
             else:
                 ssprob = max(math.exp(-(global_step)/200000-0.1), 0.5)
 
+            #logits --> B* L * zh_voc
+            #predicts -->  B * L
             logits, predicts = net(entext, zhgtruths, enlen, teacher_forcing_ratio=ssprob)
 
             loss = net.get_loss(logits, zhlabels)
@@ -89,8 +92,6 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
 
             optimizer.step()            
             
-            del logits, predicts
-            
             batch_count += 1  #新的epoch下就会置零
             global_step += 1  #每个batch加1
             
@@ -98,16 +99,17 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
             
             if global_step % print_every == 0:
                 print_avg_loss = print_loss/print_every
-                agent.append(lossRecord, global_step, print_avg_loss)
-                agent.append(ssprobRecord, global_step, ssprob)
+                
                 print_loss = 0
-
                 #calculate BLEU score and valid loss
                 #bleu_score, valid_loss = getBLEUandLoss(use_cuda, valid_loader, net, transformer)
                 bleu_score = 0
                 valid_loss = 0
-                agent.append(scoreRecord, global_step, bleu_score)
-                agent.append(validLoss, global_step, valid_loss)
+                if agent != None:
+                    agent.append(lossRecord, global_step, print_avg_loss)
+                    agent.append(ssprobRecord, global_step, ssprob)
+                    agent.append(scoreRecord, global_step, bleu_score)
+                    agent.append(validLoss, global_step, valid_loss)
                 
                 
                 
@@ -119,9 +121,16 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
                            .format(lr, batch_size, ssprob, print_avg_loss, 
                                    bleu_score, global_step))
         
-                
-                    
+             
+            del logits, predicts
+            del loss
+
+            
 def evaluate(use_cuda, net, entext, gtruths, zhlabels, enlen, transformer):
+    """
+    对英文句子进行翻译，并且将下标对应成单词输出。
+    entext: B*maxLen
+    """
     if use_cuda:
         net.cuda()
 
@@ -158,7 +167,9 @@ def evaluate(use_cuda, net, entext, gtruths, zhlabels, enlen, transformer):
 
 
 def printPredictsFromDataset(use_cuda, net, data_loader, transformer, count):
-    
+    """
+    批量对data_loader中的数据进行翻译。并输出翻译结果。
+    """
     for data in data_loader:
         
         entext = data['en_index_list']

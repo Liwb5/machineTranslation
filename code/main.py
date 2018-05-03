@@ -21,23 +21,23 @@ os.environ["CUDA_VISIBLE_DEVICES"] = '1'#
 use_cuda = torch.cuda.is_available()
 
 
-sentence_num = 100  #设置数字表示使用部分数据用于测试代码是否正确，设置None表示使用所有数据进行训练
+sentence_num = None  #设置数字表示使用部分数据用于测试代码是否正确，设置None表示使用所有数据进行训练
 
 atten_mode = 'general'  #None 表示不使用attention，general表示使用general模式
 tf_ratio = None   #测试的时候是1，如果为None表示tf_ratio随着时间变小
 
-batch_size = 50
+batch_size = 500
 en_dims = 256
 zh_dims = 256
 en_hidden_size = 256
 zh_hidden_size = 256
 zh_maxLength = 80
 lr = 0.01
-Epoches = 50
+Epoches = 20
 dropout_p = 0.1
 
-print_every = 2 #每多少个batch就print一次
-save_model_every = batch_size*1000#设置多少个batch就保存一次模型
+print_every = 10 #每多少个batch就print一次
+save_model_every = 5000#设置多少个batch就保存一次模型
 
 hyperparameters = {'epoches': 200,
                    'batch_size': 50,
@@ -71,7 +71,7 @@ if __name__ == '__main__':
                          num_workers=1,#多进程，并行加载
                          shuffle=False)
 
-    validDataset =  Dataset('../dataAfterProcess/valid3.h5', is_eval = False)
+    validDataset =  Dataset('../dataAfterProcess/valid3.h5', is_eval = False, num = 100)
     valid_loader = DataLoader(validDataset,
                      batch_size = 50,
                      num_workers = 1,
@@ -87,8 +87,8 @@ if __name__ == '__main__':
     tf = transformer.Transformer(inputlang, outputlang)
     
     #用于画各种曲线，方便我们调试
+    #agent = None #Agent(address='127.0.0.1',port=5000)
     agent = Agent(address='127.0.0.1',port=5000)
-    
     
     
     print('%s dataset has %d words. '%(inputlang.name,inputlang.n_words))
@@ -110,11 +110,6 @@ if __name__ == '__main__':
                  batch_size = batch_size,
                  atten_mode = atten_mode)
     
-    #pre_trained = torch.load('../models/test.model')
-    #net.load_state_dict(pre_trained)
-    print(net)
-    
-    #bleu_score = train.getBLEU(use_cuda, valid_loader, net, transformer)
 
     train.train(use_cuda=use_cuda, 
                 lr = lr, 

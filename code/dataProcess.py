@@ -82,6 +82,10 @@ def normalizeChinese(s):
 
 
 if __name__=='__main__':
+    path = os.path.dirname(__file__) #获得本文件所在的目录
+    if path != "":
+        os.chdir(path) #将当前路径设置为本文件所在的目录，方便下面读取文件。
+        
     ##open data file 
     en_lines = open('../data/train.%s'% lang1).read().strip().split('\n')
     zh_lines = open('../data/train.%s'% lang2).read().strip().split('\n')

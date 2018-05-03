@@ -33,44 +33,8 @@ class Attention(nn.Module):
         """
         energies = self._atten_weight(hx, encoder_outputs)
         #其实就是返回一个权重向量
-        return F.softmax(energies).unsqueeze(1)    
+        return F.softmax(energies, dim=1).unsqueeze(1)    
         
-        """
-        #下面这一段是非批量的attention。。。。
-        seq_len = encoder_outputs.size(1)
-
-        # energies --> maxLen * B
-        if self.use_cuda:
-            energies = Variable(torch.zeros(seq_len, encoder_outputs.size(0))).cuda()
-        else:
-            energies = Variable(torch.zeros(seq_len, encoder_outputs.size(0)))
-
-        encoder_outputs = encoder_outputs.transpose(0, 1)
-
-        #计算每个encoder_output与hx的分数。至于hx与encoder_output要怎样计算
-        for i in range(seq_len):
-            energies[i] = self._score(hx, encoder_outputs[i])
-
-        #change to B * maxLen 
-        energies = energies.transpose(0, 1)
-        
-        #其实就是返回一个权重向量
-        return F.softmax(energies).unsqueeze(1)
-        """
-    def _score(self, hx, encoder_output):
-
-        if self.mode == 'dot':
-            energy = torch.sum(hx * encoder_output, 1) #按行点乘
-
-        elif self.mode == 'general':
-            energy = self.attention(encoder_output)
-            energy = torch.sum(hx * energy, 1)
-            #print(energy)
-        elif self.mode == 'concat':#has not finished concat mode
-            #print(torch.cat((hx, encoder_output))
-            energy = self.attention(torch.cat((hx, encoder_output), 1)) #按行拼接
-            
-        return energy
     
     def _atten_weight(self, hx, encoder_outputs):
         """
@@ -85,6 +49,7 @@ class Attention(nn.Module):
         
         
         if self.mode == 'dot':
+            #energies = torch.mm()
             pass
         elif self.mode == 'general':
             energies = self.attention(encoder_outputs)

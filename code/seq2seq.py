@@ -117,7 +117,7 @@ class Net(nn.Module):
         encoder_outputs = encoder_outputs.index_select(0, true_order_ids)
 
         #logits --> B * L* zh_voc
-        #predicts --> B * L   it is not tensor
+        #predicts --> B * zh_maxLen  
         logits, predicts = self.decoder(zh_gtruths, encoder_outputs, encoder_h_n,
                                         encoder_c_n, entext_len,
                                         teacher_forcing_ratio= teacher_forcing_ratio,
@@ -130,17 +130,13 @@ class Net(nn.Module):
 
     def get_loss(self, logits, labels):
         """
-        logits --> zh_maxLen * B * zh_voc
-        labels --> B * zh_maxLen * 1
+        logits --> B * zh_maxLen * zh_voc
+        labels --> B * zh_maxLen
         """
         if self.use_cuda:
             labels = Variable(labels).long().cuda()
-            #logits = Variable(logits).long().cuda()
         else:
             labels = Variable(labels).long()
-            #logits = Variable(logits).long()
-
-        #labels = labels.transpose(0, 1)
 
         logits = logits.contiguous().view(-1, logits.size(-1))
         #logits = logits.data
