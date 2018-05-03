@@ -33,7 +33,7 @@ en_hidden_size = 256
 zh_hidden_size = 256
 zh_maxLength = 80
 lr = 0.01
-Epoches = 100
+Epoches = 50
 dropout_p = 0.1
 
 print_every = 2 #每多少个batch就print一次

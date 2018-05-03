@@ -111,15 +111,17 @@ class Net(nn.Module):
         
         # encoder_outputs --> B * en_maxLen * en_hidden_size
         # encoder_h_n -->  (num_layers * num_directions) * B * en_hidden_size
-        encoder_outputs, encoder_h_n = self.encoder(en_embedding, sorted_len)
+        encoder_outputs, encoder_h_n, encoder_c_n = self.encoder(en_embedding, sorted_len)
         
         #换回原先的顺序
         encoder_outputs = encoder_outputs.index_select(0, true_order_ids)
 
         #logits --> B * L* zh_voc
         #predicts --> B * L   it is not tensor
-        logits, predicts = self.decoder(zh_gtruths, encoder_outputs, encoder_h_n, entext_len,
-                    teacher_forcing_ratio= teacher_forcing_ratio, is_eval=is_eval)
+        logits, predicts = self.decoder(zh_gtruths, encoder_outputs, encoder_h_n,
+                                        encoder_c_n, entext_len,
+                                        teacher_forcing_ratio= teacher_forcing_ratio,
+                                        is_eval=is_eval)
 
         #logits -->B  * zh_maxLen * zh_voc
         #predicts --> B * zh_maxLen

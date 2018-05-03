@@ -42,14 +42,17 @@ class Encoder(nn.Module):
                                        lengths = list(sent_len))
 
         #packed_out: en_maxLen* B * en_hidden_size 
-        # h_n 是最后一个隐藏层的输出，大小为：(num_layers * num_directions, batch, hidden_size)
-        packed_out, h_n = self.lstm(packed)
+        #last_hs 是一个tuple，(h_n, c_n)
+        packed_out, last_hs = self.lstm(packed)
+        
+        # h_n：(num_layers * num_directions, batch, hidden_size)
+        h_n, c_n = last_hs
 
         unpacked, _ = rnn_utils.pad_packed_sequence(packed_out)
         
         #print('unpacked size:', unpacked.size())
         #在返回之前，先将返回值变回B*en_maxLen_en_hidden_size
-        return unpacked.transpose(0, 1), h_n
+        return unpacked.transpose(0, 1), h_n, c_n
 
 
 

@@ -52,49 +52,49 @@ class Decoder(nn.Module):
         idx = Variable(idx).long().cuda() if self.use_cuda else Variable(idx).long()
         return unpacked.gather(1, idx).squeeze()
 
-    def forward(self, sent_inputs, hidden_state, encoder_h_n, sent_len, teacher_forcing_ratio, is_eval = False):
+    def forward(self, zh_gruths, encoder_hs, encoder_h_n, encoder_c_n, 
+                entext_len, teacher_forcing_ratio, is_eval = False):
         """
-        sent_inputs: B * zh_maxLen 的中文句子的tensor
-        hidden_state: B * en_maxLen * en_hidden_size variable. the hidden state of encoder 
+        zh_gruths: B * zh_maxLen 的中文句子的variable
+        encoder_hs: B * en_maxLen * en_hidden_size variable. the hidden state of encoder 
         encoder_h_n: (num_layers * num_directions) * B * en_hidden_size  encoder输出的最后一个隐藏状态
-        sent_len: B * 1  记录每个中文句子的长度
+        encoder_c_n: (num_layers * num_directions) * B * en_hidden_size  encoder输出的最后一个隐藏状态
+        entext_len: B * 1  记录每个英文句子的长度, tensor
         use_teacher_ratio: decode时使用上次预测的结果作为下次的input的概率
-        """
-        """
-        if self.use_cuda:
-            sent_inputs = Variable(sent_inputs).long().cuda()
-        else:
-            sent_inputs = Variable(sent_inputs).long()
+        is_eval: 设置训练阶段还是测试阶段，False表示训练阶段。True表示测试阶段
         """
             
-        #sent_inputs: B * zh_maxLen * zh_dim
-        sent_inputs = self.zh_embedding(sent_inputs)
-        
-        # cx 是什么？？？
+        #zh_gruths: B * zh_maxLen * zh_dim
+        zh_embedding = self.zh_embedding(zh_gruths)
+        """
+        #可以尝试使用encoder的cn
         if self.use_cuda:
-            cx = Variable(torch.zeros(sent_inputs.size(0), self.zh_hidden_size)).cuda()
-            #hx = Variable(torch.zeros(sent_inputs.size(0), hidden_state.size(2))).cuda()
+            cx = Variable(torch.zeros(zh_embedding.size(0), self.zh_hidden_size)).cuda()
+            #hx = Variable(torch.zeros(zh_embedding.size(0), encoder_hs.size(2))).cuda()
         else:
-            cx = Variable(torch.zeros(sent_inputs.size(0), self.zh_hidden_size))
+            cx = Variable(torch.zeros(zh_embedding.size(0), self.zh_hidden_size))
+        """
+        cx = encoder_c_n.squeeze(0)
 
-
-        #hidden_state = torch.transpose(hidden_state, 0, 1).contiguous()
-        # 转置  sent_inputs: zh_maxLen * B * zh_dim
-        sent_inputs = torch.transpose(sent_inputs, 0, 1)
-        
         # hx size is B*en_hidden_size
-        #hx = hidden_state[-1].view(hidden_state.size(0), hidden_state.size(2))
-        hx = self.last_timestep(hidden_state.contiguous(), sent_len)
+        #hx = encoder_hs[-1].view(encoder_hs.size(0), encoder_hs.size(2))
+        #hx = self.last_timestep(encoder_hs.contiguous(), entext_len)
+        hx = encoder_h_n.squeeze(0)
+
+        #encoder_hs = torch.transpose(encoder_hs, 0, 1).contiguous()
+        # 转置  zh_embedding: zh_maxLen * B * zh_dim
+        zh_embedding = torch.transpose(zh_embedding, 0, 1)
+        
 
         #我们要用这两个变量去存储输出的数据(是variable类型),所以这两个变量不应该是variable，
         #它们就是一个容器，容纳输出的variable变量。
-        logits = [0 for i in range(sent_inputs.size(0))]
-        predicts = [0 for i in range(sent_inputs.size(0))]
-        for i in range(sent_inputs.size(0)):
+        logits = [0 for i in range(zh_embedding.size(0))]
+        predicts = [0 for i in range(zh_embedding.size(0))]
+        for i in range(zh_embedding.size(0)):
             
             if is_eval:
                 if i == 0:
-                    inputs_x = sent_inputs[i]
+                    inputs_x = zh_embedding[i]
                 else:
                     inputs_x = self.zh_embedding(predicts[i-1])
             else:
@@ -106,7 +106,7 @@ class Decoder(nn.Module):
                     use_teacher_forcing = False
                 #use_teacher_forcing = True
                 if use_teacher_forcing or i == 0:
-                    inputs_x = sent_inputs[i]
+                    inputs_x = zh_embedding[i]
                     #print('i==%d used:'% i,inputs_x.size())
                 else:
                     inputs_x = self.zh_embedding(predicts[i-1])
@@ -116,11 +116,11 @@ class Decoder(nn.Module):
             #---------------- add attention-----------------------#
             if self.atten_mode != None:
                 #atten_weight--> B * 1 * maxLen. it is 'at' in paper
-                atten_weight = self.atten(hx, hidden_state)
+                atten_weight = self.atten(hx, encoder_hs)
                 #print(atten_weight)
 
                 #context --> B * 1 * zh_hidden_size  it is 'ct' in paper
-                context = atten_weight.bmm(hidden_state)
+                context = atten_weight.bmm(encoder_hs)
 
                 #context --> B * zh_hidden_size
                 context = context.squeeze(1)
