@@ -3,7 +3,7 @@ import torch
 import h5py
 import os
 
-from Folder import Folder
+from Dataset import Dataset
 from torch.utils.data import DataLoader
 import dataProcess as dp
 import transformer
@@ -25,10 +25,10 @@ atten_mode = 'general'  #None 表示不使用attention，general表示使用gene
 tf_ratio = None   #测试的时候是1，如果为None表示tf_ratio随着时间变小
 
 batch_size = 200
-en_dims = 512
-zh_dims = 512
-en_hidden_size = 512
-zh_hidden_size = 512
+en_dims = 256
+zh_dims = 256
+en_hidden_size = 256
+zh_hidden_size = 256
 zh_maxLength = 80
 lr = 0.01
 Epoches = 50
@@ -45,28 +45,34 @@ hyperparameters = {'lr':lr,
 
 print(hyperparameters)
 if __name__ == '__main__':
-    #train_folder = Folder('../data/train.h5',is_test=False)
-    train_folder = Folder('../data/train3.h5',is_eval = False, num = sentence_num)
-    train_loader = DataLoader(train_folder,
+    path = os.path.dirname(__file__) #获得本文件所在的目录
+    if path != "":
+        os.chdir(path) #将当前路径设置为本文件所在的目录，方便下面读取文件。
+    
+    #加载数据，为了可以使用dataLoader批量加载数据，需要定义一个Dataset类，
+    #按照pytorch的说明，定义好几个必要的函数后就可以使用dataLoader加载了，详情看Dataset文件。
+    trainDataset = Dataset('../dataAfterProcess/train3.h5',is_eval = False, num = sentence_num)
+    train_loader = DataLoader(trainDataset,
                          batch_size=batch_size,
-                         num_workers=1,
+                         num_workers=1,#多进程，并行加载
                          shuffle=False)
 
-    valid_folder =  Folder('../data/valid3.h5', is_eval = False)
-    valid_loader = DataLoader(valid_folder,
+    validDataset =  Dataset('../dataAfterProcess/valid3.h5', is_eval = False, num = 100)
+    valid_loader = DataLoader(validDataset,
                      batch_size = 50,
                      num_workers = 1,
                      shuffle = False)
     
-    
+    #加载两个语言库
     inputlang = dp.Lang('en')
     outputlang = dp.Lang('zh')
-    inputlang.load('../data/en_dict3.pkl')
-    outputlang.load('../data/zh_dict3.pkl')
+    inputlang.load('../dataAfterProcess/en_dict3.pkl')
+    outputlang.load('../dataAfterProcess/zh_dict3.pkl')
+
 
     tf = transformer.Transformer(inputlang, outputlang)
     
-    agent = Agent(address='127.0.0.1',port=5101)
+    #agent = Agent(address='127.0.0.1',port=5101)
     
     
     
@@ -89,12 +95,12 @@ if __name__ == '__main__':
                  batch_size = batch_size,
                  atten_mode = atten_mode)
     
-    #pre_trained = torch.load('../models/test.model')
-    #net.load_state_dict(pre_trained)
+    pre_trained = torch.load('../models/lr0.010_BS500_tForce0.741_BLEU6.240_steps0.model')
+    net.load_state_dict(pre_trained)
     print(net)
     
     #bleu_score = train.getBLEU(use_cuda, valid_loader, net, transformer)
-
+    """
     train.train(use_cuda=use_cuda, 
             lr = lr, 
             net=net,
@@ -108,7 +114,7 @@ if __name__ == '__main__':
             agent = agent,
             hyperparameters = hyperparameters,
             tf_ratio=tf_ratio)
-    
+    """
     train.printPredictsFromDataset(use_cuda, net, train_loader, tf, count = 10)
     
     
