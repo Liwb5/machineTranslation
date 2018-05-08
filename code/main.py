@@ -68,13 +68,13 @@ if __name__ == '__main__':
     trainDataset = Dataset('../dataAfterProcess/train3.h5',is_eval = False, num = sentence_num)
     train_loader = DataLoader(trainDataset,
                          batch_size=batch_size,
-                         num_workers=1,#多进程，并行加载
+                         num_workers=0,#多进程，并行加载
                          shuffle=False)
 
     validDataset =  Dataset('../dataAfterProcess/valid3.h5', is_eval = False, num = 100)
     valid_loader = DataLoader(validDataset,
                      batch_size = 50,
-                     num_workers = 1,
+                     num_workers = 0,
                      shuffle = False)
     
     #加载两个语言库
