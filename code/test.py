@@ -1,4 +1,3 @@
-
 import torch
 import h5py
 import os
@@ -51,12 +50,13 @@ if __name__ == '__main__':
     
     #加载数据，为了可以使用dataLoader批量加载数据，需要定义一个Dataset类，
     #按照pytorch的说明，定义好几个必要的函数后就可以使用dataLoader加载了，详情看Dataset文件。
+    """
     trainDataset = Dataset('../dataAfterProcess/train3.h5',is_eval = False, num = sentence_num)
     train_loader = DataLoader(trainDataset,
                          batch_size=batch_size,
                          num_workers=1,#多进程，并行加载
                          shuffle=False)
-
+    """
     validDataset =  Dataset('../dataAfterProcess/valid3.h5', is_eval = False, num = 100)
     valid_loader = DataLoader(validDataset,
                      batch_size = 50,
@@ -95,7 +95,7 @@ if __name__ == '__main__':
                  batch_size = batch_size,
                  atten_mode = atten_mode)
     
-    pre_trained = torch.load('../models/lr0.010_BS500_tForce0.741_BLEU6.240_steps0.model')
+    pre_trained = torch.load('../models/lr0.010_BS500_tForce0.741_BLEU4.807_steps0.model')
     net.load_state_dict(pre_trained)
     print(net)
     
@@ -115,7 +115,7 @@ if __name__ == '__main__':
             hyperparameters = hyperparameters,
             tf_ratio=tf_ratio)
     """
-    train.printPredictsFromDataset(use_cuda, net, train_loader, tf, count = 10)
+    train.printPredictsFromDataset(use_cuda, net, valid_loader, tf, count = 10)
     
     
     

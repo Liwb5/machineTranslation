@@ -118,14 +118,15 @@ class Decoder(nn.Module):
             #---------------- add attention-----------------------#
             if self.atten_mode != None:
                 #atten_weight--> B * 1 * maxLen. it is 'at' in paper
-                atten_weight = self.atten(hx, encoder_hs)
+                #atten_weight = self.atten(hx, encoder_hs)
+                context = self.atten(encoder_hs, hx)
                 #print(atten_weight)
 
                 #context --> B * 1 * zh_hidden_size  it is 'ct' in paper
-                context = atten_weight.bmm(encoder_hs)
+                #context = atten_weight.bmm(encoder_hs)
 
                 #context --> B * zh_hidden_size
-                context = context.squeeze(1)
+                #context = context.squeeze(1)
 
                 #print('context size \n',context)
                 #print('hx size \n', hx)
