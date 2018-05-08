@@ -25,7 +25,7 @@ class Attention(nn.Module):
         elif self.mode == 'concat':
             self.attention = nn.Linear(self.zh_hidden_size + self.en_hidden_size, self.zh_hidden_size)
 
-
+"""
     def forward(self, hx, encoder_outputs):
         """
         hx: B * zh_hidden_size
@@ -34,7 +34,48 @@ class Attention(nn.Module):
         energies = self._atten_weight(hx, encoder_outputs)
         #其实就是返回一个权重向量
         return F.softmax(energies, dim=1).unsqueeze(1)    
+"""        
         
+    def forward(self, enc_outputs, hx):
+        """
+        enc_outputs: B * src_maxLen * src_hidden_size 
+        hx: B * tar_hidden_size 
+        """
+        score = self.score_(enc_outputs, hx)
+        # at: B * maxLen
+        at = F.softmax(score, dim=1).unsqueeze(1)
+        
+        # ct: B * src_hidden_size
+        ct = at.bmm(enc_outputs).squeeze(1)
+        
+        return ct
+            
+    def score_(self, enc_outputs, hx):
+        """
+        enc_outputs: B * src_maxLen * src_hidden_size 
+        hx: B * tar_hidden_size 
+        """
+        #enc_outputs_T: src_maxLen * B * src_hidden_size
+        #enc_outputs_T = enc_outputs.transpose(0, 1)
+            
+        # hx_: src_maxLen * B * tar_hidden_size
+        #hx_ = hx.expand(enc_outputs_T.size(0), hx.size(0), hx.size(1))
+            
+        if self.atten_mode == 'dot':
+            #score: B * maxLen
+            score = torch.matmul(enc_outputs, hx.unsqueeze(2))
+            score = score.squeeze(2).contiguous()
+            #score = torch.sum(hx_*enc_outputs_T, 2).transpose(0,1)
+        elif self.atten_mode == 'general':
+            score = torch.matmul(self.attention(enc_outputs), hx.unsqueeze(2))
+            score = score.squeeze(2)
+                
+        elif self.atten_mode == 'concat':
+            pass
+        
+        #score: B * maxLen
+        return score     
+    
     
     def _atten_weight(self, hx, encoder_outputs):
         """

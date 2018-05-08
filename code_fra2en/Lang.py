@@ -45,7 +45,8 @@ class Lang(object):
             
     def save(self, path):
         with open(path,'wb') as f:
-            pickle.dump([self.name,self.word2index, self.word2count, self.index2word, self.n_words],f)
+            pickle.dump([self.name,self.word2index, self.word2count, 
+                         self.index2word, self.n_words],f)
     
     def load(self,path):
         with open(path,'rb') as f:
@@ -55,14 +56,7 @@ class Lang(object):
             
             
             
-    def indexesFromSentence(self, sentence):
-        indexes = []
-        all_lang_keys = self.word2index.keys()
-        for word in sentence.split(' '):
-            if word in all_lang_keys:
-                indexes.append(self.word2index[word])
-        indexes.append(EOS_token)
-        return indexes
+    
 
 
 

@@ -112,27 +112,29 @@ class Decoder(nn.Module):
                     inputs_x = self.zh_embedding(predicts[i-1])
                     #print('i=%d unused:'% i,inputs_x.size())
    
-         
+            #hx: B * zh_hidden_size;  cx; B * zh_hidden_size
+            hx, cx = self.lstm_cell(inputs_x,(hx, cx))
+        
             #---------------- add attention-----------------------#
             if self.atten_mode != None:
                 #atten_weight--> B * 1 * maxLen. it is 'at' in paper
-                atten_weight = self.atten(hx, encoder_hs)
+                context = self.atten(encoder_hs, hx)
                 #print(atten_weight)
 
                 #context --> B * 1 * zh_hidden_size  it is 'ct' in paper
-                context = atten_weight.bmm(encoder_hs)
+                #context = atten_weight.bmm(encoder_hs)
 
                 #context --> B * zh_hidden_size
-                context = context.squeeze(1)
+                #context = context.squeeze(1)
 
                 #print('context size \n',context)
                 #print('hx size \n', hx)
-                hx = self.ht_(torch.cat((context, hx), 1))
-                hx = F.tanh(hx)
+                hx_atten = self.ht_(torch.cat((context, hx), 1))
+                hx_atten = F.tanh(hx_atten)
                 
             #----------------end attention------------------------#
             #logits[i] 第i个decoder预测成每个词的概率（这里没有用softmax归一化）
-            logits[i] = self.hx2zh_voc(hx) 
+            logits[i] = self.hx2zh_voc(hx_atten) 
 
             #选择概率最大的那个作为预测的结果
             _, predicts[i] = torch.max(logits[i], 1)
@@ -140,8 +142,7 @@ class Decoder(nn.Module):
             logits[i] = logits[i].view(1, logits[i].size(0), logits[i].size(1))
             predicts[i] = predicts[i].view(1, predicts[i].size(0))
 
-            #hx: B * zh_hidden_size;  cx; B * zh_hidden_size
-            hx, cx = self.lstm_cell(inputs_x,(hx, cx))
+           
             
         logits = torch.cat(logits)
         predicts = torch.cat(predicts, 0)
