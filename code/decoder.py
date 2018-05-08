@@ -88,10 +88,11 @@ class Decoder(nn.Module):
 
         #我们要用这两个变量去存储输出的数据(是variable类型),所以这两个变量不应该是variable，
         #它们就是一个容器，容纳输出的variable变量。
-        logits = [0 for i in range(zh_embedding.size(0))]
-        predicts = [0 for i in range(zh_embedding.size(0))]
-        for i in range(zh_embedding.size(0)):
-            
+        
+        logits = [0 for i in range(self.zh_maxLength-1)]
+        predicts = [0 for i in range(self.zh_maxLength-1)]
+        
+        for i in range(self.zh_maxLength-1):
             if is_eval:
                 if i == 0:
                     inputs_x = zh_embedding[i]
