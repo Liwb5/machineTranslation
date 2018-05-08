@@ -99,6 +99,8 @@ class Seq2Seq(nn.Module):
             enc_outputs, enc_hn, enc_cn = self.encoder(src_sent, sorted_len)
             
             enc_outputs = enc_outputs.index_select(0, sort_ids)
+            enc_hn = enc_hn.squeeze(0).index_select(0, true_order_ids)
+            enc_cn = enc_cn.squeeze(0).index_select(0, true_order_ids)
             
             probas, predicts = self.decoder(enc_outputs, enc_hn, enc_cn,
                                             tar_sent, tf_ratio=tf_ratio, 

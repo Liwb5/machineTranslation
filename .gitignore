@@ -9,3 +9,4 @@ code/*~
 .ipynb_checkpoints/
 __pycache__/
 *~
+seq2seq/
