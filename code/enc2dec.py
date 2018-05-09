@@ -11,6 +11,9 @@ from encoder import Encoder
 from decoder import Decoder
 
 
+from seq2seq.model import DecoderRNN
+from seq2seq.model import EncoderRNN
+from seq2seq.model import TopKDecoder
 
 class Net(nn.Module):
     def __init__(self, use_cuda, en_voc, en_dims, en_hidden_size, 
@@ -48,6 +51,7 @@ class Net(nn.Module):
                                 dropout_p = dropout_p,
                                 bidirectional = False)
 
+        
         self.decoder = Decoder(use_cuda = use_cuda, 
                                 zh_voc = zh_voc,
                                 zh_dims = zh_dims,
@@ -58,7 +62,19 @@ class Net(nn.Module):
                                 en_hidden_size = en_hidden_size,
                                 atten_mode = atten_mode)
         
-        
+        """
+        self.decode = DecoderRNN(vocab_size = zh_voc,
+                                            max_len = zh_maxLength, 
+                                            hidden_size = zh_hidden_size,
+                                            sos_id = 0,
+                                            eos_id = 1,
+                                            n_layers = 1,
+                                            rnn_cell = 'lstm',
+                                            bidirectional = False,
+                                            input_dropout_p = 0,
+                                            dropout_p = 0,
+                                            use_attention = True)
+        """
     def order(self, inputs, entext_len):
         """
         order函数将句子的长度按从大到小排序

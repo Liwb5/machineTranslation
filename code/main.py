@@ -2,6 +2,7 @@
 import torch
 import h5py
 import os
+import sys
 
 from Dataset import Dataset
 from torch.utils.data import DataLoader
@@ -11,8 +12,11 @@ import train
 from decoder import Decoder
 from encoder import Encoder
 from decoder import Decoder
-import seq2seq
+import enc2dec
 from hyperboard import Agent
+
+
+
 
 #os.chdir('/home/liwb/Documents/projects/mt/machineTranslation/')#修改当前路径到工程路径
 
@@ -63,6 +67,7 @@ if __name__ == '__main__':
     if path != "":
         os.chdir(path) #将当前路径设置为本文件所在的目录，方便下面读取文件。
     
+    
     #加载数据，为了可以使用dataLoader批量加载数据，需要定义一个Dataset类，
     #按照pytorch的说明，定义好几个必要的函数后就可以使用dataLoader加载了，详情看Dataset文件。
     trainDataset = Dataset('../dataAfterProcess/train3.h5',is_eval = False, num = sentence_num)
@@ -97,7 +102,7 @@ if __name__ == '__main__':
     weight = [1 for i in range(outputlang.n_words)]
     weight[2] = 0  #weight[2]对应的是padding符号，只是为了补全句子的长度，不需要计算loss
             
-    net = seq2seq.Net(use_cuda = use_cuda,
+    net = enc2dec.Net(use_cuda = use_cuda,
                  en_voc = inputlang.n_words,
                  en_dims = en_dims,
                  zh_voc = outputlang.n_words,
