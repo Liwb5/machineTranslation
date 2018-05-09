@@ -115,6 +115,10 @@ class Net(nn.Module):
         
         #换回原先的顺序
         encoder_outputs = encoder_outputs.index_select(0, true_order_ids)
+        
+        encoder_h_n = encoder_h_n.squeeze(0).index_select(0, true_order_ids)
+        encoder_c_n = encoder_c_n.squeeze(0).index_select(0, true_order_ids)
+        #print(encoder_h_n.size(), encoder_c_n.size())
 
         #logits --> B * L* zh_voc
         #predicts --> B * zh_maxLen  
@@ -133,6 +137,7 @@ class Net(nn.Module):
         logits --> B * zh_maxLen * zh_voc
         labels --> B * zh_maxLen
         """
+        labels = labels[:,:-1]
         if self.use_cuda:
             labels = Variable(labels).long().cuda()
         else:

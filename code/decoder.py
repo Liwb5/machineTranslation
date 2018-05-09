@@ -88,10 +88,11 @@ class Decoder(nn.Module):
 
         #我们要用这两个变量去存储输出的数据(是variable类型),所以这两个变量不应该是variable，
         #它们就是一个容器，容纳输出的variable变量。
-        logits = [0 for i in range(zh_embedding.size(0))]
-        predicts = [0 for i in range(zh_embedding.size(0))]
-        for i in range(zh_embedding.size(0)):
-            
+        
+        logits = [0 for i in range(self.zh_maxLength-1)]
+        predicts = [0 for i in range(self.zh_maxLength-1)]
+        
+        for i in range(self.zh_maxLength-1):
             if is_eval:
                 if i == 0:
                     inputs_x = zh_embedding[i]
@@ -118,6 +119,8 @@ class Decoder(nn.Module):
             #---------------- add attention-----------------------#
             if self.atten_mode != None:
                 #atten_weight--> B * 1 * maxLen. it is 'at' in paper
+
+                #atten_weight = self.atten(hx, encoder_hs)
                 context = self.atten(encoder_hs, hx)
                 #print(atten_weight)
 
@@ -141,8 +144,6 @@ class Decoder(nn.Module):
             
             logits[i] = logits[i].view(1, logits[i].size(0), logits[i].size(1))
             predicts[i] = predicts[i].view(1, predicts[i].size(0))
-
-           
             
         logits = torch.cat(logits)
         predicts = torch.cat(predicts, 0)

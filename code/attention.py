@@ -14,19 +14,19 @@ class Attention(nn.Module):
         super(Attention, self).__init__()
 
         self.use_cuda = use_cuda
-        self.mode = mode
+        self.atten_mode = mode
         self.en_hidden_size = en_hidden_size
         self.zh_hidden_size = zh_hidden_size
 
         #define layers
-        if self.mode == 'general':
-            self.attention = nn.Linear(self.zh_hidden_size, 
-                                        self.en_hidden_size)
-        elif self.mode == 'concat':
+        if self.atten_mode == 'general':
+            self.attention = nn.Linear(self.en_hidden_size, 
+                                        self.zh_hidden_size)
+        elif self.atten_mode == 'concat':
             self.attention = nn.Linear(self.zh_hidden_size + self.en_hidden_size, self.zh_hidden_size)
 
-"""
-    def forward(self, hx, encoder_outputs):
+
+    def forward2(self, hx, encoder_outputs):
         """
         hx: B * zh_hidden_size
         encoder_outputs: B * maxLen * en_hidden_size
@@ -34,7 +34,7 @@ class Attention(nn.Module):
         energies = self._atten_weight(hx, encoder_outputs)
         #其实就是返回一个权重向量
         return F.softmax(energies, dim=1).unsqueeze(1)    
-"""        
+
         
     def forward(self, enc_outputs, hx):
         """
@@ -46,8 +46,7 @@ class Attention(nn.Module):
         at = F.softmax(score, dim=1).unsqueeze(1)
         
         # ct: B * src_hidden_size
-        ct = at.bmm(enc_outputs).squeeze(1)
-        
+        ct = at.bmm(enc_outputs).squeeze(1)       
         return ct
             
     def score_(self, enc_outputs, hx):
@@ -74,8 +73,8 @@ class Attention(nn.Module):
             pass
         
         #score: B * maxLen
-        return score     
-    
+        return score             
+
     
     def _atten_weight(self, hx, encoder_outputs):
         """
