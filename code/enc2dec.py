@@ -15,6 +15,7 @@ from seq2seq.model import DecoderRNN
 from seq2seq.model import EncoderRNN
 from seq2seq.model import TopKDecoder
 
+
 class Net(nn.Module):
     def __init__(self, use_cuda, en_voc, en_dims, en_hidden_size, 
                 zh_voc, zh_dims, zh_hidden_size, dropout_p, weight,
@@ -62,8 +63,8 @@ class Net(nn.Module):
                                 en_hidden_size = en_hidden_size,
                                 atten_mode = atten_mode)
         
-        """
-        self.decode = DecoderRNN(vocab_size = zh_voc,
+       
+        self.decoder2 = DecoderRNN(vocab_size = zh_voc,
                                             max_len = zh_maxLength, 
                                             hidden_size = zh_hidden_size,
                                             sos_id = 0,
@@ -74,7 +75,7 @@ class Net(nn.Module):
                                             input_dropout_p = 0,
                                             dropout_p = 0,
                                             use_attention = True)
-        """
+        
     def order(self, inputs, entext_len):
         """
         order函数将句子的长度按从大到小排序
@@ -138,14 +139,22 @@ class Net(nn.Module):
 
         #logits --> B * L* zh_voc
         #predicts --> B * zh_maxLen  
+        """
         logits, predicts = self.decoder(zh_gtruths, encoder_outputs, encoder_h_n,
                                         encoder_c_n, entext_len,
                                         teacher_forcing_ratio= teacher_forcing_ratio,
                                         is_eval=is_eval)
-
+        """
+        dec_outputs, dec_hidden, ret_dict = self.decoder2(inputs=zh_gtruths,
+                                                          encoder_hidden = (encoder_h_n.unsqueeze(0), encoder_c_n.unsqueeze(0)),
+                                                          encoder_outputs = encoder_outputs,
+                                                          teacher_forcing_ratio = teacher_forcing_ratio)
+        
+        
         #logits -->B  * zh_maxLen * zh_voc
         #predicts --> B * zh_maxLen
-        return logits, predicts
+        #return logits, predicts
+        return dec_outputs, dec_hidden
 
 
     def get_loss(self, logits, labels):
@@ -153,6 +162,7 @@ class Net(nn.Module):
         logits --> B * zh_maxLen * zh_voc
         labels --> B * zh_maxLen
         """
+        
         labels = labels[:,:-1]
         if self.use_cuda:
             labels = Variable(labels).long().cuda()
@@ -166,3 +176,21 @@ class Net(nn.Module):
         loss = torch.mean(self.cost_func(logits, labels))
 
         return loss
+    
+    def get_loss2(self, dec_outputs, labels):
+        
+        labels = labels[:,:-1]
+        if self.use_cuda:
+            labels = Variable(labels).long().cuda()
+        else:
+            labels = Variable(labels).long()
+            
+        logits = torch.cat(dec_outputs, 0)
+        labels = labels.contiguous().view(-1)
+        
+        loss = torch.mean(self.cost_func(logits, labels))
+        
+        return loss
+    
+    
+    

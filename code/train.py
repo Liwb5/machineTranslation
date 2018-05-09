@@ -82,7 +82,7 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
             #predicts -->  B * L
             logits, predicts = net(entext, zhgtruths, enlen, teacher_forcing_ratio=ssprob)
 
-            loss = net.get_loss(logits, zhlabels)
+            loss = net.get_loss2(logits, zhlabels)
 
             print_loss += loss.data[0]
 
