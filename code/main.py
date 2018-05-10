@@ -31,10 +31,10 @@ atten_mode = 'general'  #None 表示不使用attention，general表示使用gene
 tf_ratio = None   #测试的时候是1，如果为None表示tf_ratio随着时间变小
 
 batch_size = 200
-en_dims = 256
-zh_dims = 256
-en_hidden_size = 256
-zh_hidden_size = 256
+en_dims = 512
+zh_dims = 512
+en_hidden_size = 512
+zh_hidden_size = 512
 zh_maxLength = 80
 lr = 0.01
 Epoches = 20
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     
     #用于画各种曲线，方便我们调试
     #agent = None #Agent(address='127.0.0.1',port=5000)
-    agent = Agent(address='127.0.0.1',port=5000)
+    agent = Agent(address='127.0.0.1',port=1357)
     
     
     print('%s dataset has %d words. '%(inputlang.name,inputlang.n_words))

@@ -94,8 +94,7 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
             
             batch_count += 1  #新的epoch下就会置零
             global_step += 1  #每个batch加1
-            
-            
+
             
             if global_step % print_every == 0:
                 print_avg_loss = print_loss/print_every
