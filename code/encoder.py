@@ -4,7 +4,7 @@ from torch.autograd import Variable
 import torch.nn.utils.rnn as rnn_utils
 
 class Encoder(nn.Module):
-    def __init__(self, use_cuda, en_dims, en_hidden_size, 
+    def __init__(self, use_cuda, en_dims, en_hidden_size, num_layers,
         dropout_p, bidirectional=False):
         """
         en_dims: 英文词向量的维度
@@ -20,7 +20,7 @@ class Encoder(nn.Module):
         
         self.lstm = nn.LSTM(input_size = en_dims,  #输入词向量的维度
                             hidden_size = en_hidden_size,  # hx的维度
-                            num_layers = 1,
+                            num_layers = num_layers,
                             bias = True,
                             batch_first = False,
                             dropout = dropout_p,

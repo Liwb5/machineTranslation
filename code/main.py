@@ -31,14 +31,16 @@ atten_mode = 'general'  #None 表示不使用attention，general表示使用gene
 tf_ratio = None   #测试的时候是1，如果为None表示tf_ratio随着时间变小
 
 batch_size = 200
-en_dims = 512
-zh_dims = 512
-en_hidden_size = 512
-zh_hidden_size = 512
+en_dims = 256
+zh_dims = 256
+en_hidden_size = 256
+zh_hidden_size = 256
 zh_maxLength = 80
 lr = 0.01
-Epoches = 20
+Epoches = 200
 dropout_p = 0.1
+num_layers = 2
+bidirectional = True
 
 print_every = 10 #每多少个batch就print一次
 save_model_every = 5000#设置多少个batch就保存一次模型
@@ -61,7 +63,7 @@ hyperparameters = {'epoches': 200,
                    'save_model_every': 10000000  #设置多少个batch就保存一次模型
                   }
 
-print(hyperparameters)
+
 if __name__ == '__main__':
     path = os.path.dirname(__file__) #获得本文件所在的目录
     if path != "":
@@ -110,6 +112,8 @@ if __name__ == '__main__':
                  en_hidden_size = en_hidden_size,
                  zh_hidden_size = zh_hidden_size,
                  dropout_p = dropout_p,
+                 num_layers = num_layers,
+                 bidirectional = bidirectional,
                  weight = weight,
                  zh_maxLength = zh_maxLength,
                  batch_size = batch_size,

@@ -18,8 +18,8 @@ from seq2seq.model import TopKDecoder
 
 class Net(nn.Module):
     def __init__(self, use_cuda, en_voc, en_dims, en_hidden_size, 
-                zh_voc, zh_dims, zh_hidden_size, dropout_p, weight,
-                zh_maxLength, batch_size, atten_mode):
+                zh_voc, zh_dims, zh_hidden_size, dropout_p, num_layers, bidirectional,
+                weight,zh_maxLength, batch_size, atten_mode):
 
         super(Net, self).__init__()
 
@@ -46,11 +46,13 @@ class Net(nn.Module):
         self.cost_func = nn.CrossEntropyLoss(weight=self.weight)
 
         #encoder的embedding是放在了Net类这里
+        
         self.encoder = Encoder(use_cuda = use_cuda,
                                 en_dims = en_dims,
                                 en_hidden_size = en_hidden_size,
                                 dropout_p = dropout_p,
-                                bidirectional = False)
+                                num_layers = num_layers,
+                                bidirectional = bidirectional)
 
         
         self.decoder = Decoder(use_cuda = use_cuda, 
@@ -63,15 +65,25 @@ class Net(nn.Module):
                                 en_hidden_size = en_hidden_size,
                                 atten_mode = atten_mode)
         
+        self.encoder2 = EncoderRNN(vocab_size = en_voc,
+                                   max_len = 50,
+                                   hidden_size = en_hidden_size,
+                                   input_dropout_p = 0,
+                                   dropout_p = 0,
+                                   n_layers = num_layers,
+                                   bidirectional = bidirectional,
+                                   rnn_cell = 'lstm',
+                                   variable_lengths = True
+                                   )
        
         self.decoder2 = DecoderRNN(vocab_size = zh_voc,
                                             max_len = zh_maxLength, 
                                             hidden_size = zh_hidden_size,
                                             sos_id = 0,
                                             eos_id = 1,
-                                            n_layers = 1,
+                                            n_layers = num_layers,
                                             rnn_cell = 'lstm',
-                                            bidirectional = False,
+                                            bidirectional = bidirectional,
                                             input_dropout_p = 0,
                                             dropout_p = 0,
                                             use_attention = True)
@@ -129,13 +141,17 @@ class Net(nn.Module):
         # encoder_outputs --> B * en_maxLen * en_hidden_size
         # encoder_h_n -->  (num_layers * num_directions) * B * en_hidden_size
         encoder_outputs, encoder_h_n, encoder_c_n = self.encoder(en_embedding, sorted_len)
-        
+        #print(encoder_outputs.size(), encoder_h_n.size())
+        #encoder_outputs, hidden = self.encoder2(entext, list(sorted_len))
+        #encoder_h_n = hidden[0]
+        #encoder_c_n = hidden[1]
+
         #换回原先的顺序
         encoder_outputs = encoder_outputs.index_select(0, true_order_ids)
         
         encoder_h_n = encoder_h_n.index_select(1, true_order_ids)
         encoder_c_n = encoder_c_n.index_select(1, true_order_ids)
-        #print(encoder_h_n.size(), encoder_c_n.size())
+
 
         #logits --> B * L* zh_voc
         #predicts --> B * zh_maxLen  
