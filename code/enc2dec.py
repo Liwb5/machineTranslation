@@ -133,36 +133,38 @@ class Net(nn.Module):
         #换回原先的顺序
         encoder_outputs = encoder_outputs.index_select(0, true_order_ids)
         
-        encoder_h_n = encoder_h_n.squeeze(0).index_select(0, true_order_ids)
-        encoder_c_n = encoder_c_n.squeeze(0).index_select(0, true_order_ids)
+        encoder_h_n = encoder_h_n.index_select(1, true_order_ids)
+        encoder_c_n = encoder_c_n.index_select(1, true_order_ids)
         #print(encoder_h_n.size(), encoder_c_n.size())
 
         #logits --> B * L* zh_voc
         #predicts --> B * zh_maxLen  
         """
-        logits, predicts = self.decoder(zh_gtruths, encoder_outputs, encoder_h_n,
+        dec_outputs, predicts = self.decoder(zh_gtruths, encoder_outputs, encoder_h_n,
                                         encoder_c_n, entext_len,
                                         teacher_forcing_ratio= teacher_forcing_ratio,
                                         is_eval=is_eval)
         """
+        #dec_outputs: a seq_len of list of tensor and within which is (batch, zh_voc), 
         dec_outputs, dec_hidden, ret_dict = self.decoder2(inputs=zh_gtruths,
-                                                          encoder_hidden = (encoder_h_n.unsqueeze(0), encoder_c_n.unsqueeze(0)),
+                                                          encoder_hidden = (encoder_h_n, encoder_c_n),
                                                           encoder_outputs = encoder_outputs,
                                                           teacher_forcing_ratio = teacher_forcing_ratio)
         
+        predicts = ret_dict[self.decoder2.KEY_SEQUENCE]
+        predicts = torch.cat(predicts, 1).contiguous().data.cpu()
         
         #logits -->B  * zh_maxLen * zh_voc
         #predicts --> B * zh_maxLen
         #return logits, predicts
-        return dec_outputs, dec_hidden
+        return dec_outputs, predicts
 
-
+    """
     def get_loss(self, logits, labels):
-        """
-        logits --> B * zh_maxLen * zh_voc
-        labels --> B * zh_maxLen
-        """
         
+        #logits --> B * zh_maxLen * zh_voc
+        #labels --> B * zh_maxLen
+   
         labels = labels[:,:-1]
         if self.use_cuda:
             labels = Variable(labels).long().cuda()
@@ -176,17 +178,20 @@ class Net(nn.Module):
         loss = torch.mean(self.cost_func(logits, labels))
 
         return loss
-    
-    def get_loss2(self, dec_outputs, labels):
+    """
+    def get_loss(self, dec_outputs, labels):
         
         labels = labels[:,:-1]
         if self.use_cuda:
             labels = Variable(labels).long().cuda()
         else:
             labels = Variable(labels).long()
-            
-        logits = torch.cat(dec_outputs, 0)
-        labels = labels.contiguous().view(-1)
+        #print(len(dec_outputs))  
+        #print(dec_outputs[0].size())
+        logits = torch.cat(dec_outputs, 0)#(batch*seq_len, zh_voc)
+        #print(logits.size())
+        #logits = logits.contiguous().view(-1, logits.size(-1))
+        labels = labels.transpose(0,1).contiguous().view(-1)
         
         loss = torch.mean(self.cost_func(logits, labels))
         
