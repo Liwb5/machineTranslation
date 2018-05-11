@@ -32,13 +32,13 @@ class Decoder(nn.Module):
                                     hidden_size = dec_hidden_size)
         
         #隐藏向量映射到词典大小，数值最大的即为预测结果
-        self.hx2voc = nn.Linear(in_features = hidden_size,
+        self.hx2voc = nn.Linear(in_features = dec_hidden_size,
                                 out_features = voc_size)
         
         self.atten = Attention(use_cuda = use_cuda,
-                               mode = atten_mode,
-                               enc_hidden_size = enc_hidden_size,
-                               dec_hidden_size = dec_hidden_size)
+                               atten_mode = atten_mode,
+                               src_hidden_size = enc_hidden_size,
+                               tar_hidden_size = dec_hidden_size)
         
         
         
