@@ -137,7 +137,7 @@ class Net(nn.Module):
         #embedding的输入需要是variable
         #en_embed: B * maxLen * en_dim
         en_embedding = self.en_embedding(entext)
-        
+
         # encoder_outputs --> B * en_maxLen * en_hidden_size
         # encoder_h_n -->  (num_layers * num_directions) * B * en_hidden_size
         encoder_outputs, encoder_h_n, encoder_c_n = self.encoder(en_embedding, sorted_len)
@@ -152,7 +152,6 @@ class Net(nn.Module):
         encoder_h_n = encoder_h_n.index_select(1, true_order_ids)
         encoder_c_n = encoder_c_n.index_select(1, true_order_ids)
 
-
         #logits --> B * L* zh_voc
         #predicts --> B * zh_maxLen  
         """
@@ -166,7 +165,7 @@ class Net(nn.Module):
                                                           encoder_hidden = (encoder_h_n, encoder_c_n),
                                                           encoder_outputs = encoder_outputs,
                                                           teacher_forcing_ratio = teacher_forcing_ratio)
-        
+
         predicts = ret_dict[self.decoder2.KEY_SEQUENCE]
         predicts = torch.cat(predicts, 1).contiguous().data.cpu()
         
@@ -216,7 +215,7 @@ class Net(nn.Module):
     def get_loss(self, logits, labels):
         
         labels = Variable(labels).long().cuda()
-        labels = labels[:,:-1]
+        #labels = labels[:,:-1]
         labels = labels.transpose(0, 1)
         
         for i in range(len(logits)):
