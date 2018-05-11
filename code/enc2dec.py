@@ -194,7 +194,7 @@ class Net(nn.Module):
         loss = torch.mean(self.cost_func(logits, labels))
 
         return loss
-    """
+    
     def get_loss(self, dec_outputs, labels):
         
         labels = labels[:,:-1]
@@ -212,6 +212,22 @@ class Net(nn.Module):
         loss = torch.mean(self.cost_func(logits, labels))
         
         return loss
-    
+    """
+    def get_loss(self, logits, labels):
+        
+        labels = Variable(labels).long().cuda()
+        labels = labels[:,:-1]
+        labels = labels.transpose(0, 1)
+        
+        for i in range(len(logits)):
+            logits[i] = logits[i].contiguous().view(1, logits[i].size(0), logits[i].size(1))
+        logits = torch.cat(logits)
+        
+        logits = logits.contiguous().view(-1, logits.size(-1))
+        labels = labels.contiguous().view(-1)
+        
+        loss = torch.mean(self.cost_func(logits, labels))
+        
+        return loss
     
     

@@ -20,7 +20,7 @@ from hyperboard import Agent
 
 #os.chdir('/home/liwb/Documents/projects/mt/machineTranslation/')#修改当前路径到工程路径
 
-os.environ["CUDA_VISIBLE_DEVICES"] = '1'#
+os.environ["CUDA_VISIBLE_DEVICES"] = '0'#
 
 use_cuda = torch.cuda.is_available()
 
@@ -31,10 +31,10 @@ atten_mode = 'general'  #None 表示不使用attention，general表示使用gene
 tf_ratio = None   #测试的时候是1，如果为None表示tf_ratio随着时间变小
 
 batch_size = 200
-en_dims = 256
-zh_dims = 256
-en_hidden_size = 256
-zh_hidden_size = 256
+en_dims = 512
+zh_dims = 512
+en_hidden_size = 512
+zh_hidden_size = 512
 zh_maxLength = 80
 lr = 0.01
 Epoches = 200

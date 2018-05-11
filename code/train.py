@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import numpy as np
 import json
 import random
+from torch.nn import utils
 import torch.nn.utils.rnn as rnn_utils
 
 import time
@@ -89,6 +90,8 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
             optimizer.zero_grad()
 
             loss.backward() 
+            
+            utils.clip_grad_norm(net.parameters(), 5)
 
             optimizer.step()            
             
