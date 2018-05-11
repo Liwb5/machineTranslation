@@ -4,7 +4,7 @@ from torch import optim
 import torch.nn.functional as F
 import torch.nn.utils.rnn as rnn_utils
 import random
-from Attention import Attention
+from attention import Attention
 
 
 class Decoder(nn.Module):

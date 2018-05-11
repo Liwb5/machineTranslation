@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import torch.nn.utils.rnn as rnn_utils
 
 class Encoder(nn.Module):
-    def __init__(self, voc_size, input_size, hidden_size， dropout_p, 
+    def __init__(self, voc_size, input_size, hidden_size, dropout_p, 
                  bidirectional=False, use_cuda=False):
         """
         voc_size: 词典中词的个数

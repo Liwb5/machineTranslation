@@ -90,7 +90,17 @@ def train(use_cuda, net, train_loader, valid_loader,
                     agent.append(scoreRecord, global_step, bleu_score)
                     agent.append(validLoss, global_step, valid_loss)
                 
-                 print('epoch %d/%d | train_loss %.4f | valid_loss %.4f | score %.4f | ssprob %.3f | batch %d | global_step %d | %s' % (epoch, epoches, print_avg_loss, valid_loss, bleu_score, tf_ratio, batch_count, global_step, timeSince(start_time, params['batch_size']*global_step/(epoches*9890000))))
+                print('epoch %d/%d | train_loss %.4f | valid_loss %.4f | score %.4f | ssprob %.3f | batch %d | global_step %d | %s' % (epoch, epoches, print_avg_loss, valid_loss, bleu_score, ssprob, batch_count, global_step, timeSince(start_time, batch_size*global_step/(epoches*9890000))))
+                
+            if global_step % save_model_every == 0:
+                print('saving model ...')
+                torch.save(net.state_dict(), '../models/lr{:.3f}_BS{:d}_tForce{:.3f}_BLEU{:.3f}_steps{:d}.model'\
+                           .format(lr, batch_size, ssprob, print_avg_loss, 
+                                   bleu_score, global_step))
+        
+             
+            del logits, predicts
+            del loss
                 
                 
                 

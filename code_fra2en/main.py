@@ -3,10 +3,11 @@ import torch.nn as nn
 from torch import optim
 import torch.nn.functional as F
 import torch.nn.utils.rnn as rnn_utils
+from torch.utils.data import DataLoader
 
 import h5py
 import os
-
+import math
 
 from hyperboard import Agent
 from Dataset import Dataset
@@ -17,7 +18,7 @@ import train
 
 params = {'epoches': 200,
                    'batch_size': 50,
-                   'sentence_num': 100, #设置100表示使用100个句子作为训练集，设置None表示使用所有数据进行训练
+                   'sentence_num': None, #设置100表示使用100个句子作为训练集，设置None表示使用所有数据进行训练
                    'tf_ratio': None,    #测试的时候需要设置为0，训练的时候设置为None表示tf_ratio随着时间变小
                    'atten_mode': 'general',  # None 表示不使用attention，general表示使用general模式
                    
@@ -50,24 +51,30 @@ if __name__ == '__main__':
     if path != "":
         os.chdir(path) #将当前路径设置为本文件所在的目录，方便下面读取文件。
     
-    version = input('please input the version of the trainData that you want to train')
+    #version = input('please input the version of the trainData that you want to train: ')
+    version = 'v1.0'
     
     #加载数据，为了可以使用dataLoader批量加载数据，需要定义一个Dataset类，
     #按照pytorch的说明，定义好几个必要的函数后就可以使用dataLoader加载了，详情看Dataset文件。
-    trainDataset = Dataset('../dataAfterProcess/dataset_fra2eng_%s.h5py'%(version),is_eval = False, num = params['sentence_num'])
+    data = Dataset('../dataAfterProcess/dataset_fra2eng_%s.h5py'%(version),is_eval = False, num = params['sentence_num'])
+    N = len(data)
+    N_train = math.floor(0.85*N)
+    N_valid = N - N_train
+    print(N,N_train,N_valid)
+    trainDataset = data[0:N_train]
     train_loader = DataLoader(trainDataset,
                          batch_size=params['batch_size'],
                          num_workers=0,   #多进程，并行加载
                          shuffle=False)
 
     
-    validDataset =  Dataset('../dataAfterProcess/valid3.h5', is_eval = False, num = 100)
+    validDataset =  data[N_train:]
     valid_loader = DataLoader(validDataset,
                      batch_size = 50,
                      num_workers = 0,
                      shuffle = False)
     
-    
+    exit()
     #加载两个语言库
     inputlang = Lang('fra')
     outputlang = Lang('eng')
