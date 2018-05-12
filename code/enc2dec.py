@@ -106,14 +106,13 @@ class Net(nn.Module):
         
         inputs = inputs.index_select(0, sort_ids)
         
-        #似乎这一步没有必要
-        #_, true_order_ids = torch.sort(sort_ids, 0, descending=False)
+        _, true_order_ids = torch.sort(sort_ids, 0, descending=False)
         
         #true_order_ids = Variable(true_order_ids).cuda() if self.use_cuda else Variable(true_order_ids)
         
         #排序之后，inputs按照句子长度从大到小排列
-        #sort_ids是原来batch的顺序，因为后面需要将顺序调回来
-        return inputs, sorted_len, sort_ids
+        #true_order_ids是原来batch的顺序，因为后面需要将顺序调回来
+        return inputs, sorted_len, true_order_ids
     
 
     def forward(self, entext, zh_gtruths, entext_len,teacher_forcing_ratio = 1, is_eval=False):
