@@ -63,21 +63,19 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
     for epoch in range(1,epoches+1):
         batch_count = 0  #记录每个epoch有多少batch
         for data in train_loader:
-
-            entext = data['en_index_list']
-            enlen = data['en_lengths']
-            zhgtruths = data['zh_index_list'] #used for training
-            zhlen = data['zh_lengths']
-            zhlabels = data['zh_labels_list'] #used for evaluating
+            src_sent = data['fra_index_list']
+            src_len = data['fra_lengths_list']
+            tar_sent = data['eng_index_list']
+            tar_len = data['eng_lengths_list']
+            tar_sent_no_SOS = tar_sent[:,1:] #去掉第一个SOS_token
             #上面这些变量的都是B * maxLen的tensor
-            """
-            print(entext)
-            print(enlen)
-            print(zhgtruths)
-            print(zhlen)
-            print(zhlabels)
+            
+            print(src_sent)
+            print(src_len)
+            print(tar_sent)
+            print(tar_len)
             exit()
-            """
+            
             #configure the teacher_forcing_ratio
             #平常测试的时候就可以不让ssprob随时间变化
             if tf_ratio != None:
@@ -87,9 +85,9 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
 
             #logits --> B* L * zh_voc
             #predicts -->  B * L
-            logits, predicts = net(entext, zhgtruths, enlen, teacher_forcing_ratio=ssprob)
+            logits, predicts = net(src_sent, tar_sent, src_len, teacher_forcing_ratio=ssprob)
 
-            loss = net.get_loss(logits, zhlabels)
+            loss = net.get_loss(logits, tar_sent_no_SOS)
 
             print_loss += loss.data[0]
 

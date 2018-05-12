@@ -3,6 +3,7 @@ import torch
 import h5py
 import os
 import sys
+import math
 
 from Dataset import Dataset
 from torch.utils.data import DataLoader
@@ -35,7 +36,7 @@ en_dims = 512
 zh_dims = 512
 en_hidden_size = 512
 zh_hidden_size = 512
-zh_maxLength = 80
+zh_maxLength = 21
 lr = 0.01
 Epoches = 200
 dropout_p = 0.1
@@ -69,33 +70,38 @@ if __name__ == '__main__':
     if path != "":
         os.chdir(path) #将当前路径设置为本文件所在的目录，方便下面读取文件。
     
-    
+    version = 'v1.0'
     #加载数据，为了可以使用dataLoader批量加载数据，需要定义一个Dataset类，
     #按照pytorch的说明，定义好几个必要的函数后就可以使用dataLoader加载了，详情看Dataset文件。
-    trainDataset = Dataset('../dataAfterProcess/train3.h5',is_eval = False, num = sentence_num)
+    data = Dataset('../dataAfterProcess/dataset_fra2eng_%s.h5py'%(version),is_eval = False, num = sentence_num)
+    N = len(data)
+    N_train = math.floor(0.85*N)
+    
+    trainDataset = data#[0:N_train]
     train_loader = DataLoader(trainDataset,
                          batch_size=batch_size,
                          num_workers=0,#多进程，并行加载
                          shuffle=False)
 
-    validDataset =  Dataset('../dataAfterProcess/valid3.h5', is_eval = False, num = 100)
+    #validDataset =  Dataset('../dataAfterProcess/valid3.h5', is_eval = False, num = 100)
+    validDataset = data[N_train:]
     valid_loader = DataLoader(validDataset,
                      batch_size = 50,
                      num_workers = 0,
                      shuffle = False)
     
     #加载两个语言库
-    inputlang = dp.Lang('en')
-    outputlang = dp.Lang('zh')
-    inputlang.load('../dataAfterProcess/en_dict3.pkl')
-    outputlang.load('../dataAfterProcess/zh_dict3.pkl')
+    inputlang = dp.Lang('fra')
+    outputlang = dp.Lang('eng')
+    inputlang.load('../dataAfterProcess/fra_input_dict_%s.pkl'%(version))
+    outputlang.load('../dataAfterProcess/eng_output_dict_%s.pkl'%(version))
 
     #transformer可以将词的下标转成对应的单词，方便我们查看
     tf = transformer.Transformer(inputlang, outputlang)
     
     #用于画各种曲线，方便我们调试
-    #agent = None #Agent(address='127.0.0.1',port=5000)
-    agent = Agent(address='127.0.0.1',port=1357)
+    agent = None #Agent(address='127.0.0.1',port=5000)
+    #agent = Agent(address='127.0.0.1',port=1357)
     
     
     print('%s dataset has %d words. '%(inputlang.name,inputlang.n_words))

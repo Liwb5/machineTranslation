@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import torch.nn.utils.rnn as rnn_utils
 
 class Encoder(nn.Module):
-    def __init__(self, voc_size, input_size, hidden_size， dropout_p, 
+    def __init__(self, voc_size, input_size, hidden_size, dropout_p, 
                  bidirectional=False, use_cuda=False):
         """
         voc_size: 词典中词的个数
@@ -38,13 +38,14 @@ class Encoder(nn.Module):
             sent: B*maxLen batch中的每个句子对应的下标
             sentLen: B*1 batch中每个句子的真实长度
         """
-
+        print(sentLen.size())
+        
         #embed -> B * maxLen * dims
         embed = self.embedding(sent)
         
         #change embedding size to maxLen*B*dims
         embed = torch.transpose(embed, 0, 1)
-
+        print(embed.size())
         #Packs a Tensor containing padded sequences of variable length.
         packed = rnn_utils.pack_padded_sequence(input = embed,  
                                        lengths = list(sentLen))
