@@ -155,9 +155,9 @@ def evaluate(use_cuda, net, entext, gtruths, zhlabels, enlen, transformer):
     zh_answer = [0 for i in range(len(entext))]
     #zh_gtruths = [0 for i in range(len(entext))]
     for i in range(len(entext)):
-        en_origin[i] = transformer.index2text(entext[i], 'en')
-        zh_answer[i] = transformer.index2text(zhlabels[i],'zh')
-        zh_predicts[i] = transformer.index2text(predicts[i],'zh')
+        en_origin[i] = transformer.index2text(entext[i], 'fra')
+        zh_answer[i] = transformer.index2text(zhlabels[i],'eng')
+        zh_predicts[i] = transformer.index2text(predicts[i],'eng')
         #zh_gtruths[i] = transformer.index2text(gtruths[i],'zh')
 
         #print('<', en_origin[i])
@@ -186,6 +186,31 @@ def printPredictsFromDataset(use_cuda, net, data_loader, transformer, count):
         zhlabels = data['zh_labels_list'] #used for evaluating
 
         en_origin, zh_answer, zh_predicts, _ = evaluate(use_cuda, net, entext, zhgtruths, zhlabels, enlen, transformer)
+        
+        for i in range(len(en_origin)):
+            print('<', en_origin[i])
+            print('=', zh_answer[i])
+            print('>',zh_predicts[i]) 
+            if i == 4:
+                break  #只输出 i+1 个句子
+        
+        count -= 1   #总共显示count个batch的句子
+        if count == 0:
+            break
+
+def printPredictsFromDataset2(use_cuda, net, data_loader, transformer, count):
+    """
+    批量对data_loader中的数据进行翻译。并输出翻译结果。
+    """
+    for data in data_loader:
+        
+        src_sent = data['fra_index_list']
+        src_len = data['fra_lengths_list']
+        tar_sent = data['eng_index_list']
+        tar_len = data['eng_lengths_list']
+        tar_label = data['eng_label_list']
+        
+        en_origin, zh_answer, zh_predicts, _ = evaluate(use_cuda, net, src_sent, tar_sent, tar_label, src_len, transformer)
         
         for i in range(len(en_origin)):
             print('<', en_origin[i])

@@ -8,7 +8,7 @@ import math
 from Dataset import Dataset
 from torch.utils.data import DataLoader
 import dataProcess as dp
-import transformer
+import Transformer2
 import train
 from decoder import Decoder
 from encoder import Encoder
@@ -17,7 +17,10 @@ import enc2dec
 from hyperboard import Agent
 
 
-
+p = {0:'SOS_token',
+     1:'EOS_token',
+     2:'PAD_token'
+     }
 
 #os.chdir('/home/liwb/Documents/projects/mt/machineTranslation/')#修改当前路径到工程路径
 
@@ -26,7 +29,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = '0'#
 use_cuda = torch.cuda.is_available()
 
 
-sentence_num = 400  #设置数字表示使用部分数据用于测试代码是否正确，设置None表示使用所有数据进行训练
+sentence_num = None  #设置数字表示使用部分数据用于测试代码是否正确，设置None表示使用所有数据进行训练
 
 atten_mode = 'general'  #None 表示不使用attention，general表示使用general模式
 tf_ratio = None   #测试的时候是1，如果为None表示tf_ratio随着时间变小
@@ -43,8 +46,8 @@ dropout_p = 0.1
 num_layers = 2
 bidirectional = True
 
-print_every = 2 #每多少个batch就print一次
-save_model_every = 5000#设置多少个batch就保存一次模型
+print_every = 10 #每多少个batch就print一次
+save_model_every = 2000#设置多少个batch就保存一次模型
 
 hyperparameters = {'epoches': 200,
                    'batch_size': 50,
@@ -93,7 +96,7 @@ if __name__ == '__main__':
     outputlang.load('../dataAfterProcess/eng_dict_%s.pkl'%(version))
 
     #transformer可以将词的下标转成对应的单词，方便我们查看
-    tf = transformer.Transformer(inputlang, outputlang)
+    tf = Transformer2.Transformer(inputlang, outputlang, p)
     
     #用于画各种曲线，方便我们调试
     agent = None #Agent(address='127.0.0.1',port=5000)
@@ -136,7 +139,7 @@ if __name__ == '__main__':
                 hyperparameters = hyperparameters,
                 tf_ratio=tf_ratio)
     
-    train.printPredictsFromDataset(use_cuda, net, valid_loader, tf, count = 10)
+    train.printPredictsFromDataset2(use_cuda, net, valid_loader, tf, count = 10)
     
     
     
