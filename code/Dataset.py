@@ -89,6 +89,7 @@ class Dataset(data.Dataset):
             self.fra_lengths_list = self.file['fra_lengths_list'][0:self.num]
             self.eng_index_list = self.file['eng_index_list'][0:self.num]
             self.eng_lengths_list = self.file['eng_lengths_list'][0:self.num]
+            self.eng_label_list = self.file['eng_label_list'][0:self.num]
             
             self.nb_samples = len(self.fra_index_list)#样本数量
         
@@ -98,6 +99,7 @@ class Dataset(data.Dataset):
             self.fra_lengths_list = self.file['fra_lengths_list']
             self.eng_index_list = self.file['eng_index_list']
             self.eng_lengths_list = self.file['eng_lengths_list']
+            self.eng_label_list = self.file['eng_label_list']
 
             self.nb_samples = len(self.fra_index_list)#样本数量
         
@@ -115,9 +117,11 @@ class Dataset(data.Dataset):
         
         eng_index_list = self.eng_index_list[index]
         eng_lengths_list = self.eng_lengths_list[index]
+        eng_label_list = self.eng_label_list[index]
         
         return {'fra_index_list': fra_index_list, 'fra_lengths_list': fra_lengths_list, \
-                'eng_index_list':eng_index_list, 'eng_lengths_list':eng_lengths_list}      
+                'eng_index_list':eng_index_list, 'eng_lengths_list':eng_lengths_list,\
+                'eng_label_list':eng_label_list}      
         
         
     def __len__(self):

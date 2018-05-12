@@ -67,13 +67,14 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
             src_len = data['fra_lengths_list']
             tar_sent = data['eng_index_list']
             tar_len = data['eng_lengths_list']
-            tar_sent_no_SOS = tar_sent[:,1:] #去掉第一个SOS_token
+            tar_label = data['eng_label_list']
             #上面这些变量的都是B * maxLen的tensor
             
             print(src_sent)
             print(src_len)
             print(tar_sent)
             print(tar_len)
+            print(tar_label)
             exit()
             
             #configure the teacher_forcing_ratio
@@ -87,7 +88,7 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
             #predicts -->  B * L
             logits, predicts = net(src_sent, tar_sent, src_len, teacher_forcing_ratio=ssprob)
 
-            loss = net.get_loss(logits, tar_sent_no_SOS)
+            loss = net.get_loss(logits, tar_label)
 
             print_loss += loss.data[0]
 

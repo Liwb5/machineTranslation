@@ -70,21 +70,17 @@ if __name__ == '__main__':
     if path != "":
         os.chdir(path) #将当前路径设置为本文件所在的目录，方便下面读取文件。
     
-    version = 'v1.0'
+    version = '3'
     #加载数据，为了可以使用dataLoader批量加载数据，需要定义一个Dataset类，
     #按照pytorch的说明，定义好几个必要的函数后就可以使用dataLoader加载了，详情看Dataset文件。
-    data = Dataset('../dataAfterProcess/dataset_fra2eng_%s.h5py'%(version),is_eval = False, num = sentence_num)
-    N = len(data)
-    N_train = math.floor(0.85*N)
+    trainDataset = Dataset('../dataAfterProcess/train_fra2eng_%s.h5py'%(version),is_eval = False, num = sentence_num)
     
-    trainDataset = data#[0:N_train]
     train_loader = DataLoader(trainDataset,
                          batch_size=batch_size,
                          num_workers=0,#多进程，并行加载
                          shuffle=False)
 
-    #validDataset =  Dataset('../dataAfterProcess/valid3.h5', is_eval = False, num = 100)
-    validDataset = data[N_train:]
+    validDataset =  Dataset('../dataAfterProcess/valid_fra2eng_%s.h5py'%(version), is_eval = False, num = 100)
     valid_loader = DataLoader(validDataset,
                      batch_size = 50,
                      num_workers = 0,
@@ -93,8 +89,8 @@ if __name__ == '__main__':
     #加载两个语言库
     inputlang = dp.Lang('fra')
     outputlang = dp.Lang('eng')
-    inputlang.load('../dataAfterProcess/fra_input_dict_%s.pkl'%(version))
-    outputlang.load('../dataAfterProcess/eng_output_dict_%s.pkl'%(version))
+    inputlang.load('../dataAfterProcess/fra_dict_%s.pkl'%(version))
+    outputlang.load('../dataAfterProcess/eng_dict_%s.pkl'%(version))
 
     #transformer可以将词的下标转成对应的单词，方便我们查看
     tf = transformer.Transformer(inputlang, outputlang)
