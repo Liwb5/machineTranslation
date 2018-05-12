@@ -106,6 +106,7 @@ class Net(nn.Module):
         
         inputs = inputs.index_select(0, sort_ids)
         
+        _, sort_ids = torch.sort(sort_ids, 0, descending=False)
         #似乎这一步没有必要
         #_, true_order_ids = torch.sort(sort_ids, 0, descending=False)
         
@@ -133,7 +134,9 @@ class Net(nn.Module):
         # order函数将句子的长度按从大到小排序
         #entext: varibale, sorted_len: tensor, true_order_ids: variable
         entext, sorted_len, true_order_ids = self.order(entext, entext_len)
-
+        #print(entext.size())
+        #print(sorted_len)
+        
         #embedding的输入需要是variable
         #en_embed: B * maxLen * en_dim
         en_embedding = self.en_embedding(entext)
@@ -145,13 +148,13 @@ class Net(nn.Module):
         #encoder_outputs, hidden = self.encoder2(entext, list(sorted_len))
         #encoder_h_n = hidden[0]
         #encoder_c_n = hidden[1]
-
+        
         #换回原先的顺序
         encoder_outputs = encoder_outputs.index_select(0, true_order_ids)
         
         encoder_h_n = encoder_h_n.index_select(1, true_order_ids)
         encoder_c_n = encoder_c_n.index_select(1, true_order_ids)
-
+        
         #logits --> B * L* zh_voc
         #predicts --> B * zh_maxLen  
         """
