@@ -194,10 +194,10 @@ class Net(nn.Module):
         loss = torch.mean(self.cost_func(logits, labels))
 
         return loss
-    
+    """
     def get_loss(self, dec_outputs, labels):
         
-        labels = labels[:,:-1]
+        #labels = labels[:,:-1]
         if self.use_cuda:
             labels = Variable(labels).long().cuda()
         else:
@@ -229,5 +229,5 @@ class Net(nn.Module):
         loss = torch.mean(self.cost_func(logits, labels))
         
         return loss
-    
+    """
     

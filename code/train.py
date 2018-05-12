@@ -69,14 +69,14 @@ def train(use_cuda, lr, net, epoches, train_loader, valid_loader, print_every, s
             tar_len = data['eng_lengths_list']
             tar_label = data['eng_label_list']
             #上面这些变量的都是B * maxLen的tensor
-            
+            """
             print(src_sent)
             print(src_len)
             print(tar_sent)
             print(tar_len)
             print(tar_label)
             exit()
-            
+            """
             #configure the teacher_forcing_ratio
             #平常测试的时候就可以不让ssprob随时间变化
             if tf_ratio != None:
