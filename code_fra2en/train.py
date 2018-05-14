@@ -225,30 +225,34 @@ def printPredictsFromDataset2(use_cuda, net, data_loader, transformer, count):
 
 
 
-def getBLEUandLoss(use_cuda, data_loader, net, transformer):
+def getBLEUandLoss(use_cuda, data_loader, net, transformer, count=10):
     
     bleu_score = 0
     data_loss = 0
-    count = 0
+    times = count
+    
     for data in data_loader:
-        count += 1
-        entext = data['en_index_list']
-        enlen = data['en_lengths']
-        zhgtruths = data['zh_index_list'] #used for training
-        zhlen = data['zh_lengths']
-        zhlabels = data['zh_labels_list'] #used for evaluating    
         
-        _, zh_answer, zh_predicts, loss = evaluate(use_cuda, net, entext, 
-                                   zhgtruths, zhlabels, enlen, transformer)
+        src_sent = data['fra_index_list']
+        src_len = data['fra_lengths_list']
+        tar_sent = data['eng_index_list']
+        tar_len = data['eng_lengths_list']
+        tar_label = data['eng_label_list']
         
-        bleu_score += score.BLEUscore(zh_predicts, zh_answer)
+        _, zh_answer, zh_predicts, loss = evaluate(use_cuda, net, src_sent, 
+                                   tar_sent, tar_label, src_len, transformer)
+        #print(zh_answer, zh_predicts)
+        bleu_score += score.BLEUscore(zh_answer,zh_predicts)
         data_loss += loss
+        
+        times -= 1
+        if times == 0:
+            break
         
 
     bleu_score = bleu_score / count
     data_loss = data_loss / count
     
-    del entext, enlen, zhgtruths, zhlen, zhlabels
     
     return bleu_score, data_loss
 

@@ -14,12 +14,14 @@ class Encoder(nn.Module):
         super(Encoder, self).__init__()
 
         self.use_cuda = use_cuda
+        self.en_hidden_size = en_hidden_size
 
+        """
         if bidirectional:
             self.en_hidden_size = int(en_hidden_size/2)
         else:
             self.en_hidden_size = en_hidden_size
-        
+        """
         
         self.lstm = nn.LSTM(input_size = en_dims,  #输入词向量的维度
                             hidden_size = self.en_hidden_size,  # hx的维度

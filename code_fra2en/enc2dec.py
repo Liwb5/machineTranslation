@@ -46,7 +46,7 @@ class Net(nn.Module):
         self.cost_func = nn.CrossEntropyLoss(weight=self.weight)
 
         #encoder的embedding是放在了Net类这里
-        
+        """
         self.encoder = Encoder(use_cuda = use_cuda,
                                 en_dims = en_dims,
                                 en_hidden_size = en_hidden_size,
@@ -54,7 +54,7 @@ class Net(nn.Module):
                                 num_layers = num_layers,
                                 bidirectional = bidirectional)
 
-        """
+        
         self.decoder = Decoder(use_cuda = use_cuda, 
                                 zh_voc = zh_voc,
                                 zh_dims = zh_dims,
@@ -64,9 +64,9 @@ class Net(nn.Module):
                                 zh_maxLength = zh_maxLength,
                                 en_hidden_size = en_hidden_size,
                                 atten_mode = atten_mode)
-        
+        """
         self.encoder2 = EncoderRNN(vocab_size = en_voc,
-                                   max_len = 50,
+                                   max_len = 21,
                                    hidden_size = en_hidden_size,
                                    input_dropout_p = 0,
                                    dropout_p = 0,
@@ -75,7 +75,7 @@ class Net(nn.Module):
                                    rnn_cell = 'lstm',
                                    variable_lengths = True
                                    )
-        """
+        
         self.decoder2 = DecoderRNN(vocab_size = zh_voc,
                                             max_len = zh_maxLength, 
                                             hidden_size = zh_hidden_size,
@@ -141,12 +141,12 @@ class Net(nn.Module):
 
         # encoder_outputs --> B * en_maxLen * en_hidden_size
         # encoder_h_n -->  (num_layers * num_directions) * B * en_hidden_size
-        encoder_outputs, encoder_h_n, encoder_c_n = self.encoder(en_embedding, sorted_len)
+        #encoder_outputs, encoder_h_n, encoder_c_n = self.encoder(en_embedding, sorted_len)
         #print(encoder_outputs.size(), encoder_h_n.size())
-        #encoder_outputs, hidden = self.encoder2(entext, list(sorted_len))
-        #encoder_h_n = hidden[0]
-        #encoder_c_n = hidden[1]
-        
+        encoder_outputs, hidden = self.encoder2(entext, list(sorted_len))
+        encoder_h_n = hidden[0]
+        encoder_c_n = hidden[1]
+        #print(encoder_outputs.size(), encoder_h_n.size())
         #换回原先的顺序
         encoder_outputs = encoder_outputs.index_select(0, true_order_ids)
         
@@ -194,7 +194,7 @@ class Net(nn.Module):
         loss = torch.mean(self.cost_func(logits, labels))
 
         return loss
-    """
+    
     def get_loss(self, dec_outputs, labels):
         
         #labels = labels[:,:-1]
@@ -215,7 +215,10 @@ class Net(nn.Module):
     """
     def get_loss(self, logits, labels):
         
-        labels = Variable(labels).long().cuda()
+        if self.use_cuda:
+            labels = Variable(labels).long().cuda()
+        else:
+            labels = Variable(labels).long()
         #labels = labels[:,:-1]
         labels = labels.transpose(0, 1)
         
@@ -229,5 +232,5 @@ class Net(nn.Module):
         loss = torch.mean(self.cost_func(logits, labels))
         
         return loss
-    """
+    
     

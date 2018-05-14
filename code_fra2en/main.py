@@ -24,29 +24,28 @@ p = {0:'SOS_token',
 
 #os.chdir('/home/liwb/Documents/projects/mt/machineTranslation/')#修改当前路径到工程路径
 
-os.environ["CUDA_VISIBLE_DEVICES"] = '0'#
+os.environ["CUDA_VISIBLE_DEVICES"] = '1'#
 
 use_cuda = torch.cuda.is_available()
 
 
-sentence_num = None  #设置数字表示使用部分数据用于测试代码是否正确，设置None表示使用所有数据进行训练
+sentence_num = 400  #设置数字表示使用部分数据用于测试代码是否正确，设置None表示使用所有数据进行训练
 
 atten_mode = 'general'  #None 表示不使用attention，general表示使用general模式
 tf_ratio = None   #测试的时候是1，如果为None表示tf_ratio随着时间变小
 
-batch_size = 200
+batch_size = 100
 en_dims = 512
 zh_dims = 512
 en_hidden_size = 512
-zh_hidden_size = 512
+zh_hidden_size = 1024
 zh_maxLength = 21
 lr = 0.01
-Epoches = 20
+Epoches = 100
 dropout_p = 0.1
-num_layers = 2
-bidirectional = True
-
-print_every = 10 #每多少个batch就print一次
+num_layers = 1
+bidirectional = False
+print_every = 2 #每多少个batch就print一次
 save_model_every = 2000#设置多少个batch就保存一次模型
 
 hyperparameters = {'epoches': 200,
@@ -85,7 +84,7 @@ if __name__ == '__main__':
 
     validDataset =  Dataset('../dataAfterProcess/valid_fra2eng_%s.h5py'%(version), is_eval = False, num = 100)
     valid_loader = DataLoader(validDataset,
-                     batch_size = 50,
+                     batch_size = 2,
                      num_workers = 0,
                      shuffle = False)
     
@@ -139,7 +138,7 @@ if __name__ == '__main__':
                 hyperparameters = hyperparameters,
                 tf_ratio=tf_ratio)
     
-    train.printPredictsFromDataset2(use_cuda, net, valid_loader, tf, count = 10)
+    train.printPredictsFromDataset2(use_cuda, net, train_loader, tf, count = 10)
     
     
     

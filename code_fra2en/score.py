@@ -21,10 +21,11 @@ def BLEUscore(tar_answers, tar_predicts, weight=(0.5,0.5,0,0)):
     for i in range(num):
         reference = tar_answers[i].split(' ')
         candidate = tar_predicts[i].split(' ')
-        
+        #print(reference, candidate)
+        #print(len(reference))
         if (len(reference)) != 0 and len(candidate) != 0:
-            score += sentence_bleu([reference], candidate, weights=weight, 
-                                   smoothing_function=chencherry.method4)#bleu-4
+            score += sentence_bleu([reference], candidate)#, 
+                                   #smoothing_function=chencherry.method4)#bleu-4
             
     return score/num
 
@@ -35,6 +36,8 @@ def BLEUscore(tar_answers, tar_predicts, weight=(0.5,0.5,0,0)):
 
 
 
+#print(BLEUscore(['I am chinese . '], ['I am chinese so . ']))
+#print('asdfj')
 
 
 
